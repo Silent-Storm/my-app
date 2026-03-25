@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام جرد المخازن الذكي</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SQL.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f3f4f6; }
+        .pwa-install-banner { display: none; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); display: flex;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+        }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Loading Screen -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mb-4"></div>
+        <p class="text-lg font-bold text-gray-700">جاري تجهيز قاعدة البيانات...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-blue-700 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i data-lucide="package"></i>
+                مخزني الرقمي
+            </h1>
+            <button onclick="exportDatabase()" class="bg-blue-600 hover:bg-blue-800 p-2 rounded-lg transition" title="تصدير قاعدة البيانات">
+                <i data-lucide="download"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 max-w-4xl">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-500">
+                <p class="text-gray-500 text-sm">إجمالي الأصناف</p>
+                <h2 id="totalItems" class="text-2xl font-bold text-gray-800">0</h2>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-green-500">
+                <p class="text-gray-500 text-sm">متوفر</p>
+                <h2 id="instockItems" class="text-2xl font-bold text-gray-800">0</h2>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-red-500 col-span-2 md:col-span-1">
+                <p class="text-gray-500 text-sm">أصناف منتهية</p>
+                <h2 id="outOfStockItems" class="text-2xl font-bold text-gray-800">0</h2>
+            </div>
+        </div>
+
+        <!-- Add Item Form (Collapsible) -->
+        <section class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-700">
+                <i data-lucide="plus-circle" class="text-blue-600"></i>
+                إضافة صنف جديد
+            </h3>
+            <form id="itemForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="itemName" placeholder="اسم المنتج" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required>
+                <input type="text" id="itemCategory" placeholder="الفئة (مثل: إلكترونيات)" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full">
+                <input type="number" id="itemQuantity" placeholder="الكمية" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required min="0">
+                <input type="number" step="0.01" id="itemPrice" placeholder="السعر" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required min="0">
+                <button type="submit" class="md:col-span-2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300">
+                    إضافة للمخزن
+                </button>
+            </form>
+        </section>
+
+        <!-- Search -->
+        <div class="relative mb-4">
+            <i data-lucide="search" class="absolute right-3 top-3 text-gray-400"></i>
+            <input type="text" id="searchInput" oninput="renderItems()" placeholder="بحث عن صنف..." class="w-full pr-10 p-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-blue-400 outline-none">
+        </div>
+
+        <!-- Inventory List -->
+        <div id="itemsContainer" class="space-y-4">
+            <!-- Items will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Bottom Navigation (Mobile Ready) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-2xl md:hidden">
+        <button onclick="window.scrollTo(0,0)" class="flex flex-col items-center text-blue-600">
+            <i data-lucide="home"></i>
+            <span class="text-xs">الرئيسية</span>
+        </button>
+        <button onclick="exportDatabase()" class="flex flex-col items-center text-gray-500">
+            <i data-lucide="share-2"></i>
+            <span class="text-xs">مشاركة</span>
+        </button>
+    </nav>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full opacity-0 transition-opacity pointer-events-none z-50">
+        تمت العملية بنجاح
+    </div>
+
+    <script>
+        let db;
+        let SQL;
+
+        // --- IndexedDB for Persistence (Alternative to LocalStorage) ---
+        const DB_NAME = 'InventorySQLDB';
+        const STORE_NAME = 'sqlite_file';
+
+        async function initDB() {
+            const config = {
+                locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
+            };
+            SQL = await initSqlJs(config);
+
+            const savedData = await loadFromIndexedDB();
+            if (savedData) {
+                db = new SQL.Database(new Uint8Array(savedData));
+            } else {
+                db = new SQL.Database();
+                db.run("CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, category TEXT, quantity INTEGER, price REAL, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);");
+            }
+            
+            document.getElementById('loadingOverlay').style.display = 'none';
+            lucide.createIcons();
+            renderItems();
+        }
+
+        async function saveToIndexedDB() {
+            const data = db.export();
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
+            request.onsuccess = e => {
+                const idb = e.target.result;
+                const tx = idb.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(data, 'db_file');
+            };
+        }
+
+        function loadFromIndexedDB() {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
+                request.onsuccess = e => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction(STORE_NAME, 'readonly');
+                    const getRequest = tx.objectStore(STORE_NAME).get('db_file');
+                    getRequest.onsuccess = () => resolve(getRequest.result);
+                };
+            });
+        }
+
+        // --- UI & Logic ---
+
+        function renderItems() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+
+            const res = db.exec("SELECT * FROM items ORDER BY id DESC");
+            let items = res.length > 0 ? res[0].values : [];
+            
+            // Stats
+            let total = 0, instock = 0, outofstock = 0;
+
+            items.forEach(item => {
+                const [id, name, category, qty, price] = item;
+                
+                total++;
+                if (qty > 0) instock++; else outofstock++;
+
+                if (name.toLowerCase().includes(search) || category.toLowerCase().includes(search)) {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center animate-in fade-in duration-300";
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg">${name}</h4>
+                            <p class="text-sm text-gray-500">${category || 'بدون فئة'}</p>
+                            <div class="mt-2 flex gap-4 text-sm font-medium">
+                                <span class="${qty > 0 ? 'text-green-600' : 'text-red-600'}">كمية: ${qty}</span>
+                                <span class="text-blue-600">سعر: $${price}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="adjustQuantity(${id}, ${qty + 1})" class="p-2 bg-green-50 text-green-600 rounded-lg"><i data-lucide="plus"></i></button>
+                            <button onclick="adjustQuantity(${id}, ${qty - 1})" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="minus"></i></button>
+                            <button onclick="deleteItem(${id})" class="p-2 bg-gray-100 text-gray-400 rounded-lg"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400"><i data-lucide="box" class="mx-auto mb-2 w-12 h-12 opacity-20"></i> المخزن فارغ</div>`;
+            }
+
+            document.getElementById('totalItems').innerText = total;
+            document.getElementById('instockItems').innerText = instock;
+            document.getElementById('outOfStockItems').innerText = outofstock;
+            lucide.createIcons();
+        }
+
+        document.getElementById('itemForm').onsubmit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById('itemName').value;
+            const cat = document.getElementById('itemCategory').value;
+            const qty = parseInt(document.getElementById('itemQuantity').value);
+            const price = parseFloat(document.getElementById('itemPrice').value);
+
+            db.run("INSERT INTO items (name, category, quantity, price) VALUES (?, ?, ?, ?)", [name, cat, qty, price]);
+            saveToIndexedDB();
+            renderItems();
+            e.target.reset();
+            showToast("تمت إضافة الصنف بنجاح");
+        };
+
+        window.adjustQuantity = (id, newQty) => {
+            if (newQty < 0) return;
+            db.run("UPDATE items SET quantity = ? WHERE id = ?", [newQty, id]);
+            saveToIndexedDB();
+            renderItems();
+        };
+
+        window.deleteItem = (id) => {
+            if (confirm("هل أنت متأكد من حذف هذا الصنف؟")) {
+                db.run("DELETE FROM items WHERE id = ?", [id]);
+                saveToIndexedDB();
+                renderItems();
+                showToast("تم الحذف");
+            }
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+
+        window.exportDatabase = () => {
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory_backup_${new Date().toISOString().split('T')[0]}.db`;
+            a.click();
+            showToast("جاري تصدير النسخة الاحتياطية");
+        };
+
+        // Initialize on load
+        window.onload = initDB;
+
+        // PWA Manifest Mockup (Inside HTML)
+        const manifest = {
+            "name": "Inventory Pro",
+            "short_name": "Inventory",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#1d4ed8"
+        };
+        const stringManifest = JSON.stringify(manifest);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+
+    </script>
+</body>
+</html>
