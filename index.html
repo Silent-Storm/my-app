@@ -1,135 +1,209 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام جرد المخازن الذكي</title>
-    <!-- Tailwind CSS for styling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מערכת ניהול מלאי SH Solutions - SQLite</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SQL.js Library -->
+    <!-- SQL.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap');
-        body { font-family: 'Tajawal', sans-serif; background-color: #f3f4f6; }
-        .pwa-install-banner { display: none; }
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); display: flex;
-            flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
-        }
+        body { font-family: 'Assistant', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .low-stock { background-color: #fef2f2; color: #dc2626; border-right: 4px solid #ef4444 !important; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* PDF Styles */
+        #pdf-template { display: none; background-color: white; padding: 40px; direction: rtl; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pdf-table th { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; padding: 12px; text-align: right; }
+        .pdf-table td { border-bottom: 1px solid #e2e8f0; padding: 12px; }
     </style>
 </head>
-<body class="pb-20">
+<body class="antialiased text-slate-900 flex flex-col min-h-screen pb-20">
 
-    <!-- Loading Screen -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mb-4"></div>
-        <p class="text-lg font-bold text-gray-700">جاري تجهيز قاعدة البيانات...</p>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[100]">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600 mb-4"></div>
+        <p class="text-slate-500 font-bold">טוען את המערכת...</p>
     </div>
 
-    <!-- Header -->
-    <header class="bg-blue-700 text-white p-4 shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold flex items-center gap-2">
-                <i data-lucide="package"></i>
-                مخزني الرقمي
-            </h1>
-            <button onclick="exportDatabase()" class="bg-blue-600 hover:bg-blue-800 p-2 rounded-lg transition" title="تصدير قاعدة البيانات">
-                <i data-lucide="download"></i>
-            </button>
-        </div>
-    </header>
-
-    <main class="container mx-auto p-4 max-w-4xl">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-500">
-                <p class="text-gray-500 text-sm">إجمالي الأصناف</p>
-                <h2 id="totalItems" class="text-2xl font-bold text-gray-800">0</h2>
+    <div class="max-w-6xl mx-auto p-4 md:p-8 flex-grow w-full">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 no-print">
+            <div class="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-4">
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-3.5 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center gap-1" style="direction: ltr !important;">
+                       <span class="text-white text-3xl font-black">S</span>
+                       <span class="text-white text-3xl font-black">H</span>
+                    </div>
+                    <div class="text-right">
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">ניהול מלאי</h1>
+                        <p class="text-blue-600 font-bold text-[10px] tracking-widest uppercase">SQLITE ENGINE</p>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-green-500">
-                <p class="text-gray-500 text-sm">متوفر</p>
-                <h2 id="instockItems" class="text-2xl font-bold text-gray-800">0</h2>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-red-500 col-span-2 md:col-span-1">
-                <p class="text-gray-500 text-sm">أصناف منتهية</p>
-                <h2 id="outOfStockItems" class="text-2xl font-bold text-gray-800">0</h2>
-            </div>
-        </div>
-
-        <!-- Add Item Form (Collapsible) -->
-        <section class="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-700">
-                <i data-lucide="plus-circle" class="text-blue-600"></i>
-                إضافة صنف جديد
-            </h3>
-            <form id="itemForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="itemName" placeholder="اسم المنتج" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required>
-                <input type="text" id="itemCategory" placeholder="الفئة (مثل: إلكترونيات)" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full">
-                <input type="number" id="itemQuantity" placeholder="الكمية" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required min="0">
-                <input type="number" step="0.01" id="itemPrice" placeholder="السعر" class="border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none w-full" required min="0">
-                <button type="submit" class="md:col-span-2 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-300">
-                    إضافة للمخزن
+            
+            <div class="flex items-center gap-3">
+                <!-- Import DB -->
+                <label for="importDb" class="bg-white text-indigo-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-indigo-100 hover:bg-indigo-50 cursor-pointer shadow-sm flex items-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="folder-open" class="w-4 h-4"></i>
+                    <span>ייבוא DB</span>
+                    <input type="file" id="importDb" class="hidden" accept=".db,.sqlite" onchange="importDatabase(event)">
+                </label>
+                <!-- Export DB -->
+                <button onclick="exportDatabase()" class="bg-white text-emerald-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-emerald-100 hover:bg-emerald-50 shadow-sm flex items-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>ייצוא DB</span>
                 </button>
-            </form>
-        </section>
+            </div>
+        </header>
 
-        <!-- Search -->
-        <div class="relative mb-4">
-            <i data-lucide="search" class="absolute right-3 top-3 text-gray-400"></i>
-            <input type="text" id="searchInput" oninput="renderItems()" placeholder="بحث عن صنف..." class="w-full pr-10 p-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-blue-400 outline-none">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">מוצרים רשומים</h3>
+                <p id="totalProductsCount" class="text-4xl font-black text-slate-800 text-right">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
+                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">מלאי נמוך</h3>
+                <p id="lowStockCount" class="text-4xl font-black text-amber-600 text-right">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
+                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">שווי מלאי כולל</h3>
+                <p id="totalValue" class="text-4xl font-black text-emerald-600 text-right">₪0</p>
+            </div>
         </div>
 
-        <!-- Inventory List -->
-        <div id="itemsContainer" class="space-y-4">
-            <!-- Items will be loaded here -->
+        <!-- Actions -->
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 no-print">
+            <div class="relative flex-grow max-w-xl text-right">
+                <input type="text" id="searchInput" oninput="renderTable()" placeholder="חיפוש לפי שם או ברקוד..." 
+                       class="w-full pr-12 pl-5 py-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm font-medium">
+                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </span>
+            </div>
+            <div class="grid grid-cols-3 md:flex gap-3">
+                <button onclick="downloadPDF()" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 py-4 px-4 md:px-6 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-1 transition-colors active:scale-95">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    PDF
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 text-white hover:bg-blue-700 py-4 px-4 md:px-10 rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-blue-200 transition-all active:scale-95 col-span-2">+ הוספת מוצר</button>
+            </div>
         </div>
-    </main>
 
-    <!-- Bottom Navigation (Mobile Ready) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 shadow-2xl md:hidden">
-        <button onclick="window.scrollTo(0,0)" class="flex flex-col items-center text-blue-600">
-            <i data-lucide="home"></i>
-            <span class="text-xs">الرئيسية</span>
-        </button>
-        <button onclick="exportDatabase()" class="flex flex-col items-center text-gray-500">
-            <i data-lucide="share-2"></i>
-            <span class="text-xs">مشاركة</span>
-        </button>
-    </nav>
+        <!-- Desktop Table -->
+        <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-12">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-black uppercase tracking-widest">
+                            <th class="p-5">שם המוצר</th>
+                            <th class="p-5">ברקוד</th>
+                            <th class="p-5 text-center">כמות</th>
+                            <th class="p-5">מחיר יחידה</th>
+                            <th class="p-5">סה"כ</th>
+                            <th class="p-5 text-center">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryBody" class="divide-y divide-slate-100 text-base font-medium"></tbody>
+                </table>
+            </div>
+        </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full opacity-0 transition-opacity pointer-events-none z-50">
-        تمت العملية بنجاح
+        <!-- Mobile Card List -->
+        <div id="mobileList" class="md:hidden flex flex-col gap-4 mb-20"></div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-400 text-xs font-medium mt-auto">
+        SH Solutions &copy; 2024 | ניהול מלאי SQLite
+    </footer>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative overflow-hidden transform">
+            <div class="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+            <h2 id="modalTitle" class="text-2xl font-black text-slate-800 mb-6 text-right">פרטי מוצר</h2>
+            <div class="space-y-4 text-right">
+                <input type="hidden" id="pId">
+                <div>
+                    <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">שם המוצר *</label>
+                    <input type="text" id="pName" placeholder="הכנס שם מוצר..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">ברקוד</label>
+                    <input type="text" id="pBarcode" placeholder="סרוק או הקלד..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-mono">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">כמות</label>
+                        <input type="number" id="pQty" placeholder="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">מחיר ליח' (₪)</label>
+                        <input type="number" id="pPrice" placeholder="0.00" step="0.01" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 mt-8">
+                <button onclick="closeModal()" class="w-full sm:flex-1 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-2xl transition-all">ביטול</button>
+                <button onclick="saveProduct()" class="w-full sm:flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-black hover:bg-blue-700 shadow-lg active:scale-95">שמור מוצר</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Template -->
+    <div id="pdf-template" class="text-right">
+        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">דוח ספירת מלאי - SH Solutions</h1>
+        <p style="margin-bottom: 10px;">תאריך הפקה: <span id="pdfDate"></span></p>
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th>שם מוצר</th>
+                    <th>ברקוד</th>
+                    <th>כמות</th>
+                    <th>מחיר</th>
+                    <th>סה"כ</th>
+                </tr>
+            </thead>
+            <tbody id="pdfBody"></tbody>
+        </table>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[100] font-bold text-sm"></div>
 
     <script>
         let db;
-        let SQL;
-
-        // --- IndexedDB for Persistence (Alternative to LocalStorage) ---
-        const DB_NAME = 'InventorySQLDB';
+        let SQL_ENGINE;
+        const DB_NAME = 'InventoryDB_SH';
         const STORE_NAME = 'sqlite_file';
 
-        async function initDB() {
-            const config = {
-                locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
-            };
-            SQL = await initSqlJs(config);
-
-            const savedData = await loadFromIndexedDB();
-            if (savedData) {
-                db = new SQL.Database(new Uint8Array(savedData));
-            } else {
-                db = new SQL.Database();
-                db.run("CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, category TEXT, quantity INTEGER, price REAL, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);");
+        async function init() {
+            try {
+                SQL_ENGINE = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
+                const saved = await loadFromIndexedDB();
+                db = saved ? new SQL_ENGINE.Database(new Uint8Array(saved)) : new SQL_ENGINE.Database();
+                
+                db.run("CREATE TABLE IF NOT EXISTS inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, barcode TEXT, qty INTEGER, price REAL)");
+                
+                renderTable();
+                document.getElementById('loadingOverlay').style.display = 'none';
+                lucide.createIcons();
+            } catch (err) {
+                console.error("Initialization error:", err);
             }
-            
-            document.getElementById('loadingOverlay').style.display = 'none';
-            lucide.createIcons();
-            renderItems();
         }
 
         async function saveToIndexedDB() {
@@ -138,111 +212,144 @@
             request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
             request.onsuccess = e => {
                 const idb = e.target.result;
-                const tx = idb.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(data, 'db_file');
+                idb.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(data, 'db');
             };
         }
 
-        function loadFromIndexedDB() {
-            return new Promise((resolve) => {
+        async function loadFromIndexedDB() {
+            return new Promise(res => {
                 const request = indexedDB.open(DB_NAME, 1);
                 request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
                 request.onsuccess = e => {
-                    const idb = e.target.result;
-                    const tx = idb.transaction(STORE_NAME, 'readonly');
-                    const getRequest = tx.objectStore(STORE_NAME).get('db_file');
-                    getRequest.onsuccess = () => resolve(getRequest.result);
+                    const getReq = e.target.result.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get('db');
+                    getReq.onsuccess = () => res(getReq.result);
                 };
+                request.onerror = () => res(null);
             });
         }
 
-        // --- UI & Logic ---
-
-        function renderItems() {
+        function renderTable() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const container = document.getElementById('itemsContainer');
-            container.innerHTML = '';
+            const tbody = document.getElementById('inventoryBody');
+            const mobileList = document.getElementById('mobileList');
+            tbody.innerHTML = '';
+            mobileList.innerHTML = '';
 
-            const res = db.exec("SELECT * FROM items ORDER BY id DESC");
+            const res = db.exec("SELECT * FROM inventory ORDER BY id DESC");
             let items = res.length > 0 ? res[0].values : [];
             
-            // Stats
-            let total = 0, instock = 0, outofstock = 0;
+            let totalVal = 0;
+            let count = 0;
+            let lowCount = 0;
 
             items.forEach(item => {
-                const [id, name, category, qty, price] = item;
-                
-                total++;
-                if (qty > 0) instock++; else outofstock++;
+                const [id, name, barcode, qty, price] = item;
+                if (name.toLowerCase().includes(search) || (barcode && barcode.toLowerCase().includes(search))) {
+                    count++;
+                    const lineTotal = qty * price;
+                    totalVal += lineTotal;
+                    if (qty < 5) lowCount++;
 
-                if (name.toLowerCase().includes(search) || category.toLowerCase().includes(search)) {
+                    // Desktop Row
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-slate-50 transition hover:bg-blue-50/30 ${qty < 5 ? 'low-stock' : ''}`;
+                    row.innerHTML = `
+                        <td class="p-5 font-bold text-slate-700">${name}</td>
+                        <td class="p-5 text-xs text-slate-400 font-mono">${barcode || '-'}</td>
+                        <td class="p-5 text-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-black ${qty < 5 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}">${qty}</span>
+                        </td>
+                        <td class="p-5 text-slate-500 font-medium">₪${price.toLocaleString()}</td>
+                        <td class="p-5 font-black text-slate-800">₪${lineTotal.toLocaleString()}</td>
+                        <td class="p-5 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="p-2 bg-blue-50 text-blue-600 rounded-xl">✎</button>
+                                <button onclick="deleteProduct(${id})" class="p-2 bg-red-50 text-red-500 rounded-xl">✖</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+
+                    // Mobile Card
                     const card = document.createElement('div');
-                    card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center animate-in fade-in duration-300";
+                    card.className = `bg-white p-4 rounded-2xl shadow-sm border ${qty < 5 ? 'border-r-4 border-r-red-500' : 'border-slate-100'}`;
                     card.innerHTML = `
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-lg">${name}</h4>
-                            <p class="text-sm text-gray-500">${category || 'بدون فئة'}</p>
-                            <div class="mt-2 flex gap-4 text-sm font-medium">
-                                <span class="${qty > 0 ? 'text-green-600' : 'text-red-600'}">كمية: ${qty}</span>
-                                <span class="text-blue-600">سعر: $${price}</span>
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-black text-slate-800 text-lg">${name}</h4>
+                                <p class="text-[10px] text-slate-400 font-mono">${barcode || 'ללא ברקוד'}</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="p-2 text-blue-600"><i data-lucide="edit-3"></i></button>
+                                <button onclick="deleteProduct(${id})" class="p-2 text-red-500"><i data-lucide="trash-2"></i></button>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="adjustQuantity(${id}, ${qty + 1})" class="p-2 bg-green-50 text-green-600 rounded-lg"><i data-lucide="plus"></i></button>
-                            <button onclick="adjustQuantity(${id}, ${qty - 1})" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="minus"></i></button>
-                            <button onclick="deleteItem(${id})" class="p-2 bg-gray-100 text-gray-400 rounded-lg"><i data-lucide="trash-2"></i></button>
+                        <div class="flex justify-between items-center text-sm font-bold bg-slate-50 p-3 rounded-xl">
+                            <span class="text-slate-500">כמות: <span class="${qty < 5 ? 'text-red-600' : 'text-slate-800'}">${qty}</span></span>
+                            <span class="text-blue-600">₪${lineTotal.toLocaleString()}</span>
                         </div>
                     `;
-                    container.appendChild(card);
+                    mobileList.appendChild(card);
                 }
             });
 
-            if (items.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400"><i data-lucide="box" class="mx-auto mb-2 w-12 h-12 opacity-20"></i> المخزن فارغ</div>`;
-            }
-
-            document.getElementById('totalItems').innerText = total;
-            document.getElementById('instockItems').innerText = instock;
-            document.getElementById('outOfStockItems').innerText = outofstock;
+            document.getElementById('totalProductsCount').innerText = count;
+            document.getElementById('lowStockCount').innerText = lowCount;
+            document.getElementById('totalValue').innerText = '₪' + totalVal.toLocaleString();
             lucide.createIcons();
         }
 
-        document.getElementById('itemForm').onsubmit = (e) => {
-            e.preventDefault();
-            const name = document.getElementById('itemName').value;
-            const cat = document.getElementById('itemCategory').value;
-            const qty = parseInt(document.getElementById('itemQuantity').value);
-            const price = parseFloat(document.getElementById('itemPrice').value);
-
-            db.run("INSERT INTO items (name, category, quantity, price) VALUES (?, ?, ?, ?)", [name, cat, qty, price]);
-            saveToIndexedDB();
-            renderItems();
-            e.target.reset();
-            showToast("تمت إضافة الصنف بنجاح");
+        window.openModal = () => {
+            document.getElementById('pId').value = '';
+            document.getElementById('pName').value = '';
+            document.getElementById('pBarcode').value = '';
+            document.getElementById('pQty').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('modalTitle').innerText = 'הוספת מוצר חדש';
+            document.getElementById('productModal').classList.remove('hidden');
         };
 
-        window.adjustQuantity = (id, newQty) => {
-            if (newQty < 0) return;
-            db.run("UPDATE items SET quantity = ? WHERE id = ?", [newQty, id]);
-            saveToIndexedDB();
-            renderItems();
+        window.closeModal = () => document.getElementById('productModal').classList.add('hidden');
+
+        window.editProduct = (id, name, barcode, qty, price) => {
+            document.getElementById('pId').value = id;
+            document.getElementById('pName').value = name;
+            document.getElementById('pBarcode').value = barcode;
+            document.getElementById('pQty').value = qty;
+            document.getElementById('pPrice').value = price;
+            document.getElementById('modalTitle').innerText = 'עריכת מוצר';
+            document.getElementById('productModal').classList.remove('hidden');
         };
 
-        window.deleteItem = (id) => {
-            if (confirm("هل أنت متأكد من حذف هذا الصنف؟")) {
-                db.run("DELETE FROM items WHERE id = ?", [id]);
+        window.saveProduct = () => {
+            const id = document.getElementById('pId').value;
+            const name = document.getElementById('pName').value;
+            const barcode = document.getElementById('pBarcode').value;
+            const qty = parseInt(document.getElementById('pQty').value) || 0;
+            const price = parseFloat(document.getElementById('pPrice').value) || 0;
+
+            if (!name) return showToast("חובה להזין שם מוצר");
+
+            if (id) {
+                db.run("UPDATE inventory SET name=?, barcode=?, qty=?, price=? WHERE id=?", [name, barcode, qty, price, id]);
+            } else {
+                db.run("INSERT INTO inventory (name, barcode, qty, price) VALUES (?, ?, ?, ?)", [name, barcode, qty, price]);
+            }
+
+            saveToIndexedDB();
+            renderTable();
+            closeModal();
+            showToast("נשמר בהצלחה");
+        };
+
+        window.deleteProduct = (id) => {
+            if (confirm("האם למחוק פריט זה?")) {
+                db.run("DELETE FROM inventory WHERE id=?", [id]);
                 saveToIndexedDB();
-                renderItems();
-                showToast("تم الحذف");
+                renderTable();
+                showToast("נמחק מהמלאי");
             }
         };
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 2000);
-        }
 
         window.exportDatabase = () => {
             const data = db.export();
@@ -250,31 +357,54 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `inventory_backup_${new Date().toISOString().split('T')[0]}.db`;
+            a.download = `inventory_SH_${new Date().getTime()}.sqlite`;
             a.click();
-            showToast("جاري تصدير النسخة الاحتياطية");
+            showToast("מייצא קובץ נתונים...");
         };
 
-        // Initialize on load
-        window.onload = initDB;
-
-        // PWA Manifest Mockup (Inside HTML)
-        const manifest = {
-            "name": "Inventory Pro",
-            "short_name": "Inventory",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#ffffff",
-            "theme_color": "#1d4ed8"
+        window.importDatabase = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function() {
+                const Uints = new Uint8Array(reader.result);
+                db = new SQL_ENGINE.Database(Uints);
+                saveToIndexedDB();
+                renderTable();
+                showToast("הנתונים יובאו בהצלחה");
+            };
+            reader.readAsArrayBuffer(file);
         };
-        const stringManifest = JSON.stringify(manifest);
-        const blob = new Blob([stringManifest], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestURL;
-        document.head.appendChild(link);
 
+        window.downloadPDF = () => {
+            const now = new Date();
+            document.getElementById('pdfDate').innerText = now.toLocaleString();
+            const pdfBody = document.getElementById('pdfBody');
+            pdfBody.innerHTML = '';
+            
+            const res = db.exec("SELECT * FROM inventory");
+            if (res.length > 0) {
+                res[0].values.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${row[1]}</td><td>${row[2] || '-'}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[3]*row[4]}</td>`;
+                    pdfBody.appendChild(tr);
+                });
+            }
+
+            const element = document.getElementById('pdf-template');
+            element.style.display = 'block';
+            html2pdf().from(element).save(`Stock_Report_${now.toLocaleDateString()}.pdf`).then(() => {
+                element.style.display = 'none';
+            });
+        };
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            t.innerText = m; t.style.opacity = 1;
+            setTimeout(() => t.style.opacity = 0, 2500);
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
