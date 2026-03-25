@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מערכת ניהול מלאי SH Solutions - SQLite</title>
+    <title>מערכת ניהול מלאי SH Solutions - Inventory Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SQL.js -->
@@ -16,162 +16,289 @@
     
     <style>
         body { font-family: 'Assistant', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        .low-stock { background-color: #fef2f2; color: #dc2626; border-right: 4px solid #ef4444 !important; }
+        .low-stock { background-color: #fef2f2 !important; color: #dc2626 !important; border-right: 4px solid #ef4444 !important; }
+        .negative-stock { background-color: #f0fdf4 !important; color: #166534 !important; border-right: 4px solid #22c55e !important; }
+        
+        @media (min-width: 768px) { .mobile-only { display: none !important; } }
+        @media (max-width: 767px) { .desktop-only { display: none !important; } }
+
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* PDF Styles */
         #pdf-template { display: none; background-color: white; padding: 40px; direction: rtl; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; padding: 12px; text-align: right; }
-        .pdf-table td { border-bottom: 1px solid #e2e8f0; padding: 12px; }
+        .pdf-table th { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; padding: 10px; text-align: right; font-size: 12px; }
+        .pdf-table td { border-bottom: 1px solid #e2e8f0; padding: 10px; font-size: 11px; }
+
+        /* ستايل لتبويبات الصفحات (التنقل) */
+        .nav-item.active { color: #2563eb; border-bottom: 3px solid #2563eb; background-color: #eff6ff; }
+        .page-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased text-slate-900 flex flex-col min-h-screen pb-20">
+<body class="antialiased text-slate-900 flex flex-col min-h-screen font-medium pb-24 md:pb-10">
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[100]">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600 mb-4"></div>
-        <p class="text-slate-500 font-bold">טוען את המערכת...</p>
+        <p class="text-slate-500 font-bold italic">מפעיל מערכת...</p>
     </div>
 
-    <div class="max-w-6xl mx-auto p-4 md:p-8 flex-grow w-full">
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 no-print">
-            <div class="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
+    <!-- Header & Top Navigation (Desktop) -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 no-print">
+        <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-3.5 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center gap-1" style="direction: ltr !important;">
-                       <span class="text-white text-3xl font-black">S</span>
-                       <span class="text-white text-3xl font-black">H</span>
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-3 rounded-2xl shadow-md flex items-center gap-1" style="direction: ltr !important;">
+                       <span class="text-white text-2xl font-black">S</span><span class="text-white text-2xl font-black">H</span>
                     </div>
-                    <div class="text-right">
-                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">ניהול מלאי</h1>
-                        <p class="text-blue-600 font-bold text-[10px] tracking-widest uppercase">SQLITE ENGINE</p>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">ניהול מלאי</h1>
                     </div>
                 </div>
             </div>
             
-            <div class="flex items-center gap-3">
-                <!-- Import DB -->
-                <label for="importDb" class="bg-white text-indigo-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-indigo-100 hover:bg-indigo-50 cursor-pointer shadow-sm flex items-center gap-2 transition-all active:scale-95">
-                    <i data-lucide="folder-open" class="w-4 h-4"></i>
-                    <span>ייבוא DB</span>
+            <!-- أزرار حفظ وفتح الداتا بيس -->
+            <div class="flex items-center gap-2">
+                <label for="importDb" class="bg-slate-50 text-indigo-700 px-4 py-2 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-100 cursor-pointer shadow-sm flex items-center gap-2 transition-all">
+                    <i data-lucide="folder-open" class="w-4 h-4"></i><span class="hidden md:inline">פתח DB</span>
                     <input type="file" id="importDb" class="hidden" accept=".db,.sqlite" onchange="importDatabase(event)">
                 </label>
-                <!-- Export DB -->
-                <button onclick="exportDatabase()" class="bg-white text-emerald-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-emerald-100 hover:bg-emerald-50 shadow-sm flex items-center gap-2 transition-all active:scale-95">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>ייצוא DB</span>
+                <button onclick="exportDatabase()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 shadow-md flex items-center gap-2 transition-all">
+                    <i data-lucide="save" class="w-4 h-4"></i><span class="hidden md:inline">שמור DB</span>
                 </button>
             </div>
-        </header>
-
-        <!-- Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
-                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">מוצרים רשומים</h3>
-                <p id="totalProductsCount" class="text-4xl font-black text-slate-800 text-right">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
-                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">מלאי נמוך</h3>
-                <p id="lowStockCount" class="text-4xl font-black text-amber-600 text-right">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
-                <h3 class="text-slate-400 text-xs font-black uppercase mb-1 text-right">שווי מלאי כולל</h3>
-                <p id="totalValue" class="text-4xl font-black text-emerald-600 text-right">₪0</p>
-            </div>
         </div>
 
-        <!-- Actions -->
-        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 no-print">
-            <div class="relative flex-grow max-w-xl text-right">
-                <input type="text" id="searchInput" oninput="renderTable()" placeholder="חיפוש לפי שם או ברקוד..." 
-                       class="w-full pr-12 pl-5 py-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm font-medium">
-                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
-                    <i data-lucide="search" class="w-5 h-5"></i>
-                </span>
+        <!-- Navigation Tabs (Desktop) -->
+        <div class="hidden md:flex max-w-6xl mx-auto px-8 border-t border-slate-100">
+            <button onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-item active flex items-center gap-2 px-6 py-4 font-bold text-slate-500 hover:text-blue-600 transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> דשבורד
+            </button>
+            <button onclick="switchPage('count')" id="nav-count" class="nav-item flex items-center gap-2 px-6 py-4 font-bold text-slate-500 hover:text-blue-600 transition-colors">
+                <i data-lucide="scan-barcode" class="w-5 h-5"></i> ספירה חכמה
+            </button>
+            <button onclick="switchPage('inventory')" id="nav-inventory" class="nav-item flex items-center gap-2 px-6 py-4 font-bold text-slate-500 hover:text-blue-600 transition-colors">
+                <i data-lucide="list" class="w-5 h-5"></i> ניהול הפריטים
+            </button>
+        </div>
+    </header>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] no-print">
+        <button onclick="switchPage('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center p-2 text-blue-600">
+            <i data-lucide="layout-dashboard" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">דשבורד</span>
+        </button>
+        <button onclick="switchPage('count')" id="nav-mobile-count" class="flex flex-col items-center p-2 text-slate-400">
+            <div class="bg-blue-600 text-white p-3 rounded-full -mt-8 shadow-lg shadow-blue-200 border-4 border-white">
+                <i data-lucide="scan-barcode" class="w-6 h-6"></i>
             </div>
-            <div class="grid grid-cols-3 md:flex gap-3">
-                <button onclick="downloadPDF()" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 py-4 px-4 md:px-6 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-1 transition-colors active:scale-95">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                    PDF
+            <span class="text-[10px] font-bold mt-1 text-slate-800">ספירה</span>
+        </button>
+        <button onclick="switchPage('inventory')" id="nav-mobile-inventory" class="flex flex-col items-center p-2 text-slate-400">
+            <i data-lucide="list" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">פריטים</span>
+        </button>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8 flex-grow w-full">
+        
+        <!-- ================= PAGE 1: DASHBOARD (الرئيسية) ================= -->
+        <section id="page-dashboard" class="page-section active">
+            <div class="bg-amber-50 border-r-4 border-amber-400 p-3 rounded-lg mb-6 text-amber-800 text-xs font-bold flex items-center gap-2 shadow-sm">
+                <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                נתונים בזיכרון זמני. יש ללחוץ על "שמור DB" לפני סגירה.
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 text-right">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-slate-400"></div>
+                    <h3 class="text-slate-400 text-[10px] font-black uppercase mb-1">סה"כ פריטים בבסיס הנתונים</h3>
+                    <p id="totalInDB" class="text-2xl font-black text-slate-800">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
+                    <h3 class="text-slate-400 text-[10px] font-black uppercase mb-1">פריטים שנספרו (כמות > 0)</h3>
+                    <p id="countedItems" class="text-2xl font-black text-blue-600">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-emerald-500"></div>
+                    <h3 class="text-slate-400 text-[10px] font-black uppercase mb-1">שווי מלאי נוכחי</h3>
+                    <p id="stockValue" class="text-2xl font-black text-emerald-600">₪0</p>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-purple-500"></div>
+                    <h3 class="text-slate-400 text-[10px] font-black uppercase mb-1">סה"כ רווח ממכירות (כמות < 0)</h3>
+                    <p id="profitValue" class="text-2xl font-black text-purple-600">₪0</p>
+                </div>
+            </div>
+
+            <!-- Net Difference -->
+            <div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl mb-8 flex justify-between items-center">
+                <div class="text-right">
+                    <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">מאזן כללי (הפרש)</h3>
+                    <p id="netBalance" class="text-3xl font-black">₪0</p>
+                </div>
+                <i data-lucide="trending-up" class="w-10 h-10 text-slate-700"></i>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button onclick="openResetModal()" class="bg-red-50 text-red-600 p-6 rounded-3xl font-black border border-red-100 hover:bg-red-100 transition flex flex-col items-center justify-center gap-2">
+                    <i data-lucide="refresh-ccw" class="w-8 h-8"></i>
+                    <span>איפוס ספירה (התחל מחדש)</span>
+                    <span class="text-xs font-normal text-red-400">מאפס את כל הכמויות ל-0 בצורה מאובטחת</span>
                 </button>
-                <button onclick="openModal()" class="bg-blue-600 text-white hover:bg-blue-700 py-4 px-4 md:px-10 rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-blue-200 transition-all active:scale-95 col-span-2">+ הוספת מוצר</button>
+                <button onclick="downloadPDF()" class="bg-blue-50 text-blue-600 p-6 rounded-3xl font-black border border-blue-100 hover:bg-blue-100 transition flex flex-col items-center justify-center gap-2">
+                    <i data-lucide="printer" class="w-8 h-8"></i>
+                    <span>הפקת דוח PDF</span>
+                    <span class="text-xs font-normal text-blue-400">יצירת דוח מפורט של המלאי והרווח</span>
+                </button>
             </div>
-        </div>
+        </section>
 
-        <!-- Desktop Table -->
-        <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-12">
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-right border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-black uppercase tracking-widest">
-                            <th class="p-5">שם המוצר</th>
-                            <th class="p-5">ברקוד</th>
-                            <th class="p-5 text-center">כמות</th>
-                            <th class="p-5">מחיר יחידה</th>
-                            <th class="p-5">סה"כ</th>
-                            <th class="p-5 text-center">פעולות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryBody" class="divide-y divide-slate-100 text-base font-medium"></tbody>
-                </table>
+        <!-- ================= PAGE 2: SMART COUNT (الجرد الذكي) ================= -->
+        <section id="page-count" class="page-section">
+            <div class="max-w-xl mx-auto text-center mt-4">
+                <h2 class="text-2xl font-black text-slate-800 mb-2">ספירה חכמה מהירה</h2>
+                <p class="text-slate-500 text-sm mb-8">הקלד ברקוד או סרוק בעזרת קורא ברקודים. הכמות תתעדכן אוטומטית.</p>
+
+                <!-- مربع البحث للباركود -->
+                <div class="relative mb-8">
+                    <input type="text" id="smartScanInput" placeholder="העבר ברקוד כאן..." 
+                           class="w-full text-center text-2xl py-6 rounded-3xl border-2 border-blue-200 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 outline-none transition-all shadow-lg font-mono tracking-widest text-slate-800 bg-white" autocomplete="off" autofocus>
+                    <div class="absolute top-1/2 left-6 transform -translate-y-1/2 text-blue-400">
+                        <i data-lucide="scan" class="w-8 h-8"></i>
+                    </div>
+                </div>
+
+                <!-- شاشة عرض آخر منتج تم جرده -->
+                <div id="lastScannedCard" class="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hidden transform transition-all duration-300">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 id="lastScannedName" class="text-2xl font-black text-slate-800 mb-1">שם המוצר</h3>
+                    <p id="lastScannedBarcode" class="text-slate-400 font-mono text-sm mb-6">123456789</p>
+                    
+                    <div class="flex items-center justify-center gap-6 bg-slate-50 p-4 rounded-2xl">
+                        <button id="btnSmartMinus" class="w-14 h-14 rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-100 font-black text-2xl flex items-center justify-center active:scale-90 transition-transform">-</button>
+                        <div class="text-center">
+                            <span class="block text-[10px] text-slate-400 font-bold uppercase mb-1">כמות נוכחית</span>
+                            <span id="lastScannedQty" class="text-4xl font-black text-blue-600">1</span>
+                        </div>
+                        <button id="btnSmartPlus" class="w-14 h-14 rounded-2xl bg-blue-600 shadow-md text-white hover:bg-blue-700 font-black text-2xl flex items-center justify-center active:scale-90 transition-transform">+</button>
+                    </div>
+                </div>
+                
+                <div id="scanError" class="hidden bg-red-50 text-red-600 p-4 rounded-2xl border border-red-200 mt-4 font-bold flex items-center justify-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i> <span id="scanErrorMsg">מוצר לא נמצא!</span>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Mobile Card List -->
-        <div id="mobileList" class="md:hidden flex flex-col gap-4 mb-20"></div>
-    </div>
+        <!-- ================= PAGE 3: INVENTORY LIST (الجدول والمنتجات) ================= -->
+        <section id="page-inventory" class="page-section">
+            <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+                <div class="relative flex-grow text-right">
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="חיפוש מהיר..." 
+                           class="w-full pr-12 pl-5 py-3 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm font-bold bg-white">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <button onclick="openModal()" class="bg-slate-900 text-white hover:bg-black py-3 px-8 rounded-2xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> הוספת מוצר
+                </button>
+            </div>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-400 text-xs font-medium mt-auto">
-        SH Solutions &copy; 2024 | ניהול מלאי SQLite
-    </footer>
+            <!-- Desktop Table -->
+            <div class="desktop-only bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-black uppercase tracking-widest">
+                                <th class="p-4">שם המוצר</th>
+                                <th class="p-4">ברקוד</th>
+                                <th class="p-4 text-center">כמות</th>
+                                <th class="p-4">מחיר</th>
+                                <th class="p-4 text-center">פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryBody" class="divide-y divide-slate-100 font-bold"></tbody>
+                    </table>
+                </div>
+            </div>
 
-    <!-- Product Modal -->
+            <!-- Mobile Card List -->
+            <div id="mobileList" class="mobile-only flex flex-col gap-4 text-right"></div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Product Modal (إضافة وتعديل) -->
     <div id="productModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity">
-        <div class="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative overflow-hidden transform">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative overflow-hidden transform">
             <div class="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
             <h2 id="modalTitle" class="text-2xl font-black text-slate-800 mb-6 text-right">פרטי מוצר</h2>
             <div class="space-y-4 text-right">
                 <input type="hidden" id="pId">
                 <div>
-                    <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">שם המוצר *</label>
-                    <input type="text" id="pName" placeholder="הכנס שם מוצר..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                    <label class="block text-[10px] font-black text-slate-400 mb-1.5 uppercase">שם המוצר *</label>
+                    <input type="text" id="pName" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold text-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">ברקוד</label>
-                    <input type="text" id="pBarcode" placeholder="סרוק או הקלד..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-mono">
+                    <label class="block text-[10px] font-black text-slate-400 mb-1.5 uppercase">ברקוד</label>
+                    <input type="text" id="pBarcode" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">כמות</label>
-                        <input type="number" id="pQty" placeholder="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                        <label class="block text-[10px] font-black text-slate-400 mb-1.5 uppercase">כמות</label>
+                        <input type="number" id="pQty" placeholder="0" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-black text-slate-500 mb-1.5 uppercase tracking-wide">מחיר ליח' (₪)</label>
-                        <input type="number" id="pPrice" placeholder="0.00" step="0.01" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500">
+                        <label class="block text-[10px] font-black text-slate-400 mb-1.5 uppercase">מחיר ליח' (₪)</label>
+                        <input type="number" id="pPrice" placeholder="0.00" step="0.01" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none">
                     </div>
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-3 mt-8">
-                <button onclick="closeModal()" class="w-full sm:flex-1 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-2xl transition-all">ביטול</button>
-                <button onclick="saveProduct()" class="w-full sm:flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-black hover:bg-blue-700 shadow-lg active:scale-95">שמור מוצר</button>
+                <button onclick="closeModal()" class="w-full sm:flex-1 py-4 text-slate-500 font-bold hover:bg-slate-100 rounded-2xl transition-all">ביטול</button>
+                <button onclick="saveProduct()" class="w-full sm:flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 shadow-lg active:scale-95 transition-all">שמור במערכת</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Reset Modal (تصفير ذكي ومحمي) -->
+    <div id="resetModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl relative text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-octagon" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">איפוס ספירה</h2>
+            <p class="text-slate-500 text-sm mb-6 font-bold">פעולה זו תאפס את כל הכמויות של כל המוצרים ל-0. השמות והמחירים יישמרו.</p>
+            
+            <label class="block text-xs font-black text-slate-600 mb-2">כדי לאשר, הקלד <span class="text-red-600 bg-red-50 px-1 rounded">0000</span> בתיבה:</label>
+            <input type="text" id="resetConfirmInput" placeholder="0000" class="w-full text-center p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-red-500 font-mono tracking-[0.5em] text-xl mb-6 font-black text-slate-800" oninput="checkResetAuth()">
+            
+            <div class="flex flex-col gap-2">
+                <button id="executeResetBtn" onclick="executeReset()" class="w-full bg-slate-200 text-slate-400 py-4 rounded-2xl font-black transition-all cursor-not-allowed" disabled>בצע איפוס מוחלט</button>
+                <button onclick="closeResetModal()" class="w-full py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-2xl transition-all">ביטול</button>
             </div>
         </div>
     </div>
 
     <!-- PDF Template -->
-    <div id="pdf-template" class="text-right">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">דוח ספירת מלאי - SH Solutions</h1>
-        <p style="margin-bottom: 10px;">תאריך הפקה: <span id="pdfDate"></span></p>
+    <div id="pdf-template">
+        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1 style="font-size: 24px; font-weight: bold;">דוח ספירת מלאי ורווח - SH Solutions</h1>
+            <p style="font-size: 12px; color: #666;">תאריך הפקה: <span id="pdfDate"></span></p>
+        </div>
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th>שם מוצר</th>
+                    <th>פריט</th>
                     <th>ברקוד</th>
                     <th>כמות</th>
                     <th>מחיר</th>
@@ -180,54 +307,172 @@
             </thead>
             <tbody id="pdfBody"></tbody>
         </table>
+        <div style="margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; font-weight: bold;">
+            <p>מוצרים שנספרו: <span id="pdfCounted">0</span></p>
+            <p>שווי מלאי: <span id="pdfStockValue">0</span></p>
+            <p>סה"כ רווח: <span id="pdfProfit">0</span></p>
+            <p style="font-size: 18px; margin-top: 10px;">מאזן כללי: <span id="pdfNet">0</span></p>
+        </div>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[100] font-bold text-sm"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[100] font-black text-sm text-center min-w-[200px]"></div>
 
     <script>
         let db;
         let SQL_ENGINE;
-        const DB_NAME = 'InventoryDB_SH';
-        const STORE_NAME = 'sqlite_file';
+        let lastScannedId = null;
 
+        // ================= التهيئة وقاعدة البيانات =================
         async function init() {
             try {
                 SQL_ENGINE = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
-                const saved = await loadFromIndexedDB();
-                db = saved ? new SQL_ENGINE.Database(new Uint8Array(saved)) : new SQL_ENGINE.Database();
-                
+                db = new SQL_ENGINE.Database();
                 db.run("CREATE TABLE IF NOT EXISTS inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, barcode TEXT, qty INTEGER, price REAL)");
-                
                 renderTable();
                 document.getElementById('loadingOverlay').style.display = 'none';
                 lucide.createIcons();
-            } catch (err) {
-                console.error("Initialization error:", err);
+                
+                setupSmartScanner();
+            } catch (err) { console.error(err); }
+        }
+
+        // ================= نظام الصفحات (Navigation) =================
+        function switchPage(pageId) {
+            // إخفاء كل الصفحات
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            // إظهار الصفحة المطلوبة
+            document.getElementById('page-' + pageId).classList.add('active');
+
+            // تحديث ستايل الأزرار للديسكتوب
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            const desktopNav = document.getElementById('nav-' + pageId);
+            if(desktopNav) desktopNav.classList.add('active');
+
+            // تحديث ستايل الأزرار للموبايل
+            document.getElementById('nav-mobile-dashboard').className = "flex flex-col items-center p-2 text-slate-400";
+            document.getElementById('nav-mobile-inventory').className = "flex flex-col items-center p-2 text-slate-400";
+            document.getElementById('nav-mobile-count').innerHTML = `
+                <div class="bg-slate-100 text-slate-400 p-3 rounded-full -mt-8 shadow-sm border-4 border-white"><i data-lucide="scan-barcode" class="w-6 h-6"></i></div>
+                <span class="text-[10px] font-bold mt-1 text-slate-400">ספירה</span>`;
+            
+            if (pageId === 'dashboard') {
+                document.getElementById('nav-mobile-dashboard').className = "flex flex-col items-center p-2 text-blue-600";
+            } else if (pageId === 'inventory') {
+                document.getElementById('nav-mobile-inventory').className = "flex flex-col items-center p-2 text-blue-600";
+            } else if (pageId === 'count') {
+                document.getElementById('nav-mobile-count').innerHTML = `
+                <div class="bg-blue-600 text-white p-3 rounded-full -mt-8 shadow-lg shadow-blue-200 border-4 border-white"><i data-lucide="scan-barcode" class="w-6 h-6"></i></div>
+                <span class="text-[10px] font-bold mt-1 text-slate-800">ספירה</span>`;
+                // لما يفتح شاشة العد، خلي المؤشر تلقائي في مربع الباركود
+                setTimeout(() => document.getElementById('smartScanInput').focus(), 100);
             }
+            lucide.createIcons();
+            
+            if(pageId === 'dashboard') renderTable(); // لتحديث الارقام اذا تغيرت
         }
 
-        async function saveToIndexedDB() {
-            const data = db.export();
-            const request = indexedDB.open(DB_NAME, 1);
-            request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
-            request.onsuccess = e => {
-                const idb = e.target.result;
-                idb.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(data, 'db');
-            };
-        }
-
-        async function loadFromIndexedDB() {
-            return new Promise(res => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
-                request.onsuccess = e => {
-                    const getReq = e.target.result.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get('db');
-                    getReq.onsuccess = () => res(getReq.result);
-                };
-                request.onerror = () => res(null);
+        // ================= الجرد الذكي (Smart Scanner) =================
+        function setupSmartScanner() {
+            const input = document.getElementById('smartScanInput');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const val = this.value.trim();
+                    if (!val) return;
+                    processScan(val);
+                    this.value = ''; // تفريغ بعد القراءة
+                }
             });
         }
 
+        function processScan(val) {
+            const errDiv = document.getElementById('scanError');
+            const card = document.getElementById('lastScannedCard');
+            
+            // بحث عن المنتج بالاسم او الباركود
+            const res = db.exec("SELECT id, name, barcode, qty, price FROM inventory WHERE barcode = ? OR name = ?", [val, val]);
+            
+            if (res.length > 0 && res[0].values.length > 0) {
+                // لقينا المنتج
+                const [id, name, barcode, qty, price] = res[0].values[0];
+                
+                // تحديث الكمية في الداتا بيس
+                db.run("UPDATE inventory SET qty = qty + 1 WHERE id = ?", [id]);
+                
+                // تحديث واجهة العد
+                lastScannedId = id;
+                document.getElementById('lastScannedName').innerText = name;
+                document.getElementById('lastScannedBarcode').innerText = barcode || 'ללא ברקוד';
+                document.getElementById('lastScannedQty').innerText = qty + 1; // الرقم الجديد
+                
+                // تفعيل ازرار التعديل السريع
+                document.getElementById('btnSmartPlus').onclick = () => updateQtyFromSmart(1);
+                document.getElementById('btnSmartMinus').onclick = () => updateQtyFromSmart(-1);
+
+                errDiv.classList.add('hidden');
+                card.classList.remove('hidden');
+                
+                // مؤثرات بصرية وصوتية
+                showToast("✅ נספר: " + name);
+                if (navigator.vibrate) navigator.vibrate([100]); // هزة الموبايل
+                
+                // تحديث الجدول بالخلفية عشان الارقام تضل صح
+                renderTable();
+            } else {
+                // ما لقى المنتج
+                card.classList.add('hidden');
+                errDiv.classList.remove('hidden');
+                document.getElementById('scanErrorMsg').innerText = `ברקוד "${val}" לא נמצא!`;
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]); // هزة خطأ
+            }
+        }
+
+        function updateQtyFromSmart(change) {
+            if(!lastScannedId) return;
+            db.run("UPDATE inventory SET qty = qty + ? WHERE id = ?", [change, lastScannedId]);
+            const res = db.exec("SELECT qty FROM inventory WHERE id = ?", [lastScannedId]);
+            if(res.length > 0) {
+                document.getElementById('lastScannedQty').innerText = res[0].values[0][0];
+                if (navigator.vibrate) navigator.vibrate(50);
+                renderTable();
+            }
+        }
+
+        // ================= التصفير الذكي (Smart Reset) =================
+        window.openResetModal = () => {
+            document.getElementById('resetConfirmInput').value = '';
+            checkResetAuth();
+            document.getElementById('resetModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('resetConfirmInput').focus(), 100);
+        };
+        
+        window.closeResetModal = () => document.getElementById('resetModal').classList.add('hidden');
+        
+        window.checkResetAuth = () => {
+            const val = document.getElementById('resetConfirmInput').value;
+            const btn = document.getElementById('executeResetBtn');
+            if(val === '0000') {
+                btn.disabled = false;
+                btn.className = "w-full bg-red-600 text-white py-4 rounded-2xl font-black hover:bg-red-700 transition-all shadow-lg active:scale-95";
+            } else {
+                btn.disabled = true;
+                btn.className = "w-full bg-slate-200 text-slate-400 py-4 rounded-2xl font-black transition-all cursor-not-allowed";
+            }
+        };
+
+        window.executeReset = () => {
+            db.run("UPDATE inventory SET qty = 0");
+            renderTable();
+            closeResetModal();
+            
+            // تفريغ شاشة العد الذكي اذا كان مفتوح
+            document.getElementById('lastScannedCard').classList.add('hidden');
+            lastScannedId = null;
+            
+            showToast("✅ כל הכמויות אופסו בהצלחה");
+        };
+
+        // ================= عرض الجدول والنتائج =================
         function renderTable() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const tbody = document.getElementById('inventoryBody');
@@ -238,67 +483,101 @@
             const res = db.exec("SELECT * FROM inventory ORDER BY id DESC");
             let items = res.length > 0 ? res[0].values : [];
             
-            let totalVal = 0;
-            let count = 0;
-            let lowCount = 0;
+            let totalInDB = items.length;
+            let countedCount = 0;
+            let currentStockValue = 0;
+            let totalProfit = 0;
 
             items.forEach(item => {
                 const [id, name, barcode, qty, price] = item;
-                if (name.toLowerCase().includes(search) || (barcode && barcode.toLowerCase().includes(search))) {
-                    count++;
-                    const lineTotal = qty * price;
-                    totalVal += lineTotal;
-                    if (qty < 5) lowCount++;
+                
+                if (qty > 0) {
+                    countedCount++;
+                    currentStockValue += (qty * price);
+                } else if (qty < 0) {
+                    totalProfit += Math.abs(qty * price);
+                }
 
+                if (name.toLowerCase().includes(search) || (barcode && barcode.toLowerCase().includes(search))) {
+                    const rowStatus = qty > 0 ? '' : (qty < 0 ? 'negative-stock' : 'low-stock');
+                    
                     // Desktop Row
-                    const row = document.createElement('tr');
-                    row.className = `border-b border-slate-50 transition hover:bg-blue-50/30 ${qty < 5 ? 'low-stock' : ''}`;
-                    row.innerHTML = `
-                        <td class="p-5 font-bold text-slate-700">${name}</td>
-                        <td class="p-5 text-xs text-slate-400 font-mono">${barcode || '-'}</td>
-                        <td class="p-5 text-center">
-                            <span class="px-3 py-1 rounded-full text-xs font-black ${qty < 5 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}">${qty}</span>
+                    const tr = document.createElement('tr');
+                    tr.className = `border-b border-slate-50 transition hover:bg-slate-50 ${rowStatus}`;
+                    tr.innerHTML = `
+                        <td class="p-4">${name}</td>
+                        <td class="p-4 text-xs text-slate-400 font-mono">${barcode || '-'}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-1 bg-white border border-slate-100 p-1 rounded-xl inline-flex shadow-sm">
+                                <button onclick="updateQty(${id}, -1)" class="w-6 h-6 rounded-md bg-slate-50 text-slate-600 hover:bg-slate-200 font-black">-</button>
+                                <span class="w-8 text-center text-xs font-black ${qty > 0 ? 'text-blue-600' : (qty < 0 ? 'text-green-600' : 'text-slate-400')}">${qty}</span>
+                                <button onclick="updateQty(${id}, 1)" class="w-6 h-6 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-200 font-black">+</button>
+                            </div>
                         </td>
-                        <td class="p-5 text-slate-500 font-medium">₪${price.toLocaleString()}</td>
-                        <td class="p-5 font-black text-slate-800">₪${lineTotal.toLocaleString()}</td>
-                        <td class="p-5 text-center">
+                        <td class="p-4 text-slate-500 font-bold">₪${price.toLocaleString()}</td>
+                        <td class="p-4 text-center no-print">
                             <div class="flex justify-center gap-2">
-                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="p-2 bg-blue-50 text-blue-600 rounded-xl">✎</button>
-                                <button onclick="deleteProduct(${id})" class="p-2 bg-red-50 text-red-500 rounded-xl">✖</button>
+                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="text-blue-500 p-2 hover:bg-blue-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="deleteProduct(${id})" class="text-red-500 p-2 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </td>
                     `;
-                    tbody.appendChild(row);
+                    tbody.appendChild(tr);
 
                     // Mobile Card
                     const card = document.createElement('div');
-                    card.className = `bg-white p-4 rounded-2xl shadow-sm border ${qty < 5 ? 'border-r-4 border-r-red-500' : 'border-slate-100'}`;
+                    card.className = `bg-white p-4 rounded-2xl shadow-sm border ${qty > 0 ? 'border-r-4 border-blue-500' : (qty < 0 ? 'border-r-4 border-green-500' : 'border-slate-100')}`;
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-3">
                             <div>
-                                <h4 class="font-black text-slate-800 text-lg">${name}</h4>
+                                <h4 class="font-black text-slate-800 text-base leading-tight">${name}</h4>
                                 <p class="text-[10px] text-slate-400 font-mono">${barcode || 'ללא ברקוד'}</p>
                             </div>
                             <div class="flex gap-1">
-                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="p-2 text-blue-600"><i data-lucide="edit-3"></i></button>
-                                <button onclick="deleteProduct(${id})" class="p-2 text-red-500"><i data-lucide="trash-2"></i></button>
+                                <button onclick="editProduct(${id}, '${name}', '${barcode || ''}', ${qty}, ${price})" class="text-blue-500 p-2"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="deleteProduct(${id})" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center text-sm font-bold bg-slate-50 p-3 rounded-xl">
-                            <span class="text-slate-500">כמות: <span class="${qty < 5 ? 'text-red-600' : 'text-slate-800'}">${qty}</span></span>
-                            <span class="text-blue-600">₪${lineTotal.toLocaleString()}</span>
+                        <div class="flex justify-between items-center text-sm font-bold bg-slate-50 p-2 rounded-xl">
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1 bg-white p-1 rounded-lg shadow-sm border border-slate-100">
+                                    <button onclick="updateQty(${id}, -1)" class="w-7 h-7 rounded bg-slate-50 text-slate-600 active:scale-90 font-black">-</button>
+                                    <span class="w-6 text-center ${qty > 0 ? 'text-blue-600' : (qty < 0 ? 'text-green-600' : 'text-slate-400')}">${qty}</span>
+                                    <button onclick="updateQty(${id}, 1)" class="w-7 h-7 rounded bg-blue-50 text-blue-600 active:scale-90 font-black">+</button>
+                                </div>
+                            </div>
+                            <span class="${qty < 0 ? 'text-green-600' : 'text-slate-800'}">₪${Math.abs(qty * price).toLocaleString()}</span>
                         </div>
                     `;
                     mobileList.appendChild(card);
                 }
             });
 
-            document.getElementById('totalProductsCount').innerText = count;
-            document.getElementById('lowStockCount').innerText = lowCount;
-            document.getElementById('totalValue').innerText = '₪' + totalVal.toLocaleString();
+            // Update Dashbaord
+            document.getElementById('totalInDB').innerText = totalInDB;
+            document.getElementById('countedItems').innerText = countedCount;
+            document.getElementById('stockValue').innerText = '₪' + currentStockValue.toLocaleString();
+            document.getElementById('profitValue').innerText = '₪' + totalProfit.toLocaleString();
+            
+            const balance = currentStockValue - totalProfit;
+            document.getElementById('netBalance').innerText = '₪' + balance.toLocaleString();
+            document.getElementById('netBalance').className = `text-3xl font-black ${balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
             lucide.createIcons();
         }
 
+        window.updateQty = (id, change) => {
+            db.run("UPDATE inventory SET qty = qty + ? WHERE id = ?", [change, id]);
+            renderTable();
+            // تحديث بطاقة الشاشة الذكية لو كانت معروضة
+            if(lastScannedId === id) {
+                const res = db.exec("SELECT qty FROM inventory WHERE id = ?", [id]);
+                if(res.length>0) document.getElementById('lastScannedQty').innerText = res[0].values[0][0];
+            }
+            if (navigator.vibrate) navigator.vibrate(50);
+        };
+
+        // ================= إضافة وتعديل وحذف =================
         window.openModal = () => {
             document.getElementById('pId').value = '';
             document.getElementById('pName').value = '';
@@ -328,7 +607,7 @@
             const qty = parseInt(document.getElementById('pQty').value) || 0;
             const price = parseFloat(document.getElementById('pPrice').value) || 0;
 
-            if (!name) return showToast("חובה להזין שם מוצר");
+            if (!name) return showToast("נא להזין שם מוצר");
 
             if (id) {
                 db.run("UPDATE inventory SET name=?, barcode=?, qty=?, price=? WHERE id=?", [name, barcode, qty, price, id]);
@@ -336,46 +615,44 @@
                 db.run("INSERT INTO inventory (name, barcode, qty, price) VALUES (?, ?, ?, ?)", [name, barcode, qty, price]);
             }
 
-            saveToIndexedDB();
             renderTable();
             closeModal();
             showToast("נשמר בהצלחה");
         };
 
         window.deleteProduct = (id) => {
-            if (confirm("האם למחוק פריט זה?")) {
+            if (confirm("למחוק את הפריט?")) {
                 db.run("DELETE FROM inventory WHERE id=?", [id]);
-                saveToIndexedDB();
                 renderTable();
-                showToast("נמחק מהמלאי");
+                showToast("הפריט נמחק");
             }
         };
 
+        // ================= الحفظ والاستيراد =================
         window.exportDatabase = () => {
             const data = db.export();
             const blob = new Blob([data], { type: 'application/x-sqlite3' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `inventory_SH_${new Date().getTime()}.sqlite`;
+            a.download = `SH_Inventory_${new Date().getTime()}.db`;
             a.click();
-            showToast("מייצא קובץ נתונים...");
+            showToast("הקובץ נשמר במכשיר");
         };
 
-        window.importDatabase = (event) => {
-            const file = event.target.files[0];
+        window.importDatabase = (e) => {
+            const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function() {
-                const Uints = new Uint8Array(reader.result);
-                db = new SQL_ENGINE.Database(Uints);
-                saveToIndexedDB();
+                db = new SQL_ENGINE.Database(new Uint8Array(reader.result));
                 renderTable();
-                showToast("הנתונים יובאו בהצלחה");
+                showToast("הנתונים נטענו בהצלحة");
             };
             reader.readAsArrayBuffer(file);
         };
 
+        // ================= PDF =================
         window.downloadPDF = () => {
             const now = new Date();
             document.getElementById('pdfDate').innerText = now.toLocaleString();
@@ -383,25 +660,34 @@
             pdfBody.innerHTML = '';
             
             const res = db.exec("SELECT * FROM inventory");
+            let c = 0, s = 0, p = 0;
             if (res.length > 0) {
                 res[0].values.forEach(row => {
+                    if(row[3] > 0) { c++; s += (row[3]*row[4]); }
+                    else if(row[3] < 0) { p += Math.abs(row[3]*row[4]); }
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${row[1]}</td><td>${row[2] || '-'}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[3]*row[4]}</td>`;
+                    tr.innerHTML = `<td>${row[1]}</td><td>${row[2]||'-'}</td><td>${row[3]}</td><td>${row[4]}</td><td>${Math.abs(row[3]*row[4])}</td>`;
                     pdfBody.appendChild(tr);
                 });
             }
+            document.getElementById('pdfCounted').innerText = c;
+            document.getElementById('pdfStockValue').innerText = '₪' + s.toLocaleString();
+            document.getElementById('pdfProfit').innerText = '₪' + p.toLocaleString();
+            document.getElementById('pdfNet').innerText = '₪' + (s-p).toLocaleString();
 
-            const element = document.getElementById('pdf-template');
-            element.style.display = 'block';
-            html2pdf().from(element).save(`Stock_Report_${now.toLocaleDateString()}.pdf`).then(() => {
-                element.style.display = 'none';
-            });
+            const el = document.getElementById('pdf-template');
+            el.style.display = 'block';
+            html2pdf().from(el).set({ margin: 10, filename: 'Stock_Report.pdf' }).save().then(()=> el.style.display='none');
         };
 
         function showToast(m) {
             const t = document.getElementById('toast');
             t.innerText = m; t.style.opacity = 1;
-            setTimeout(() => t.style.opacity = 0, 2500);
+            t.style.transform = "translate(-50%, -10px)";
+            setTimeout(() => {
+                t.style.opacity = 0;
+                t.style.transform = "translate(-50%, 0)";
+            }, 2500);
         }
 
         window.onload = init;
