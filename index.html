@@ -30,21 +30,17 @@
         .active-tab { border-bottom: 2px solid #40E0D0; color: #40E0D0; }
         
         /* PDF specific styles */
-        #pdf-container { display: none; background: white; color: black; padding: 20px; direction: rtl; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        #pdf-container { display: none; background: white; color: black; padding: 15px; direction: rtl; box-sizing: border-box; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; }
         .pdf-table th { background-color: #f2f2f2; }
         
         @media print {
-            html, body { background-color: #ffffff !important; color: #000000 !important; }
-            /* إخفاء كل محتويات الصفحة تماماً ما عدا حاوية الطباعة عشان ما يعمل صفحة فارغة */
+            html, body { background-color: #ffffff !important; color: #000000 !important; margin: 0; padding: 0; height: auto; }
             body > *:not(#pdf-container) { display: none !important; }
-            #pdf-container, #pdf-container * { color: #000000 !important; }
-            #pdf-container { display: block !important; width: 100%; direction: rtl; background-color: #ffffff !important; padding: 0; margin: 0; }
-            .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            .pdf-table th, .pdf-table td { border: 1px solid #000000 !important; padding: 8px; text-align: right; }
+            #pdf-container { display: block !important; width: 100%; position: relative; background-color: #ffffff !important; margin: 0; padding: 0; }
             .pdf-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            @page { margin: 10mm; }
+            @page { margin: 5mm; size: auto; }
         }
     </style>
 </head>
@@ -55,7 +51,7 @@
         <div class="flex justify-between items-center max-w-lg mx-auto">
             <div>
                 <h1 class="text-xl font-bold text-brand-sky">جرد مخزن يونيبرس</h1>
-                <p class="text-xs text-brand-turq">بإدارة أبو جواهر</p>
+                <p class="text-xs text-brand-turq">إشراف: أبو جواهر</p>
             </div>
             <div class="text-2xl text-brand-turq">
                 <i class="fa-solid fa-boxes-stacked"></i>
@@ -84,12 +80,20 @@
             <!-- Stats Dashboard -->
             <div class="grid grid-cols-2 gap-3 mb-6">
                 <div class="glass-panel p-4 rounded-xl text-center">
-                    <p class="text-xs text-gray-300">المجموع المعدود (موجب)</p>
-                    <p class="text-2xl font-bold text-brand-sky mt-1" id="stat-positive">0</p>
+                    <p class="text-[10px] text-gray-300">إجمالي القيمة (₪)</p>
+                    <p class="text-xl font-bold text-brand-sky mt-1" id="stat-money">0</p>
                 </div>
                 <div class="glass-panel p-4 rounded-xl text-center">
-                    <p class="text-xs text-gray-300">الربح الكلي (سالب)</p>
-                    <p class="text-2xl font-bold text-red-400 mt-1" id="stat-negative">0</p>
+                    <p class="text-[10px] text-gray-300">ربح المرتجع (₪)</p>
+                    <p class="text-xl font-bold text-red-400 mt-1" id="stat-neg-money">0</p>
+                </div>
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <p class="text-[10px] text-gray-300">مجموع الكميات</p>
+                    <p class="text-lg font-bold text-white mt-1" id="stat-positive">0</p>
+                </div>
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <p class="text-[10px] text-gray-300">إجمالي السالب</p>
+                    <p class="text-lg font-bold text-red-400 mt-1" id="stat-negative">0</p>
                 </div>
             </div>
 
@@ -99,22 +103,22 @@
                         <label class="block text-sm text-brand-turq mb-1">الباركود</label>
                         <div class="relative">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-brand-turq pointer-events-none"></i>
-                            <input type="text" id="barcode-input" inputmode="numeric" pattern="[0-9]*" class="w-full bg-brand-dark border border-gray-600 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-brand-turq" placeholder="امسح أو اكتب الباركود..." required autofocus>
+                            <input type="text" id="barcode-input" inputmode="numeric" pattern="[0-9]*" class="w-full bg-brand-dark border border-gray-600 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-brand-turq text-lg" placeholder="امسح أو اكتب الباركود..." required autofocus>
                         </div>
-                        <p id="product-name-hint" class="text-xs text-brand-sky mt-2 h-4"></p>
+                        <p id="product-name-hint" class="text-xs text-brand-sky mt-2 h-4 overflow-hidden text-ellipsis whitespace-nowrap"></p>
                     </div>
 
                     <div class="mb-6">
-                        <label class="block text-sm text-brand-turq mb-1">الكمية (موجب للجرد، سالب للربح)</label>
+                        <label class="block text-sm text-brand-turq mb-1">الكمية (موجب جرد، سالب ربح)</label>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="adjustQty(-1)" class="bg-gray-700 w-12 h-12 rounded-lg text-xl hover:bg-gray-600">-</button>
+                            <button type="button" onclick="adjustQty(-1)" class="bg-gray-700 w-12 h-12 rounded-lg text-xl hover:bg-gray-600 text-white">-</button>
                             <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-brand-dark border border-gray-600 rounded-lg py-3 text-center text-xl text-white focus:outline-none focus:border-brand-turq" required>
                             <button type="button" onclick="adjustQty(1)" class="bg-brand-turq w-12 h-12 rounded-lg text-xl text-black font-bold hover:bg-brand-sky">+</button>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-brand-sky hover:bg-brand-turq text-black font-bold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> إضافة للجرد
+                    <button type="submit" class="w-full bg-brand-sky hover:bg-brand-turq text-black font-bold py-4 rounded-xl transition-colors flex justify-center items-center gap-2 shadow-lg active:scale-95">
+                        <i class="fa-solid fa-plus text-lg"></i> إضافة للجرد
                     </button>
                 </form>
             </div>
@@ -124,46 +128,38 @@
         <section id="section-list" class="hidden">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-bold text-brand-turq">قائمة الجرد الحالية</h2>
-                <button onclick="generatePDF()" class="bg-brand-sky text-black px-3 py-1 rounded-md text-sm font-bold">
+                <button onclick="generatePDF()" class="bg-brand-sky text-black px-4 py-2 rounded-lg text-sm font-bold shadow-md active:scale-95">
                     <i class="fa-solid fa-file-pdf"></i> تحميل PDF
                 </button>
             </div>
             
             <div id="inventory-list" class="space-y-3">
-                <!-- Items will be injected here -->
+                <!-- Items injected here -->
             </div>
             
             <div id="empty-state" class="text-center py-10 text-gray-500 hidden">
                 <i class="fa-solid fa-box-open text-4xl mb-3"></i>
-                <p>القائمة فارغة، ابدأ الجرد الآن.</p>
+                <p>القائمة فارغة يا أبو جواهر، ابدأ الجرد!</p>
             </div>
         </section>
 
         <!-- Tab 3: Settings & Data -->
         <section id="section-settings" class="hidden">
             <div class="glass-panel p-5 rounded-2xl mb-4">
-                <h3 class="text-brand-turq font-bold mb-3 border-b border-gray-700 pb-2">قاعدة بيانات المنتجات (جوجل شيت)</h3>
+                <h3 class="text-brand-turq font-bold mb-3 border-b border-gray-700 pb-2">قاعدة بيانات يونيبرس</h3>
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    لسحب بيانات المنتجات (الباركود، الاسم، السعر)، اضغط على الزر أدناه لسحبها من رابطك، أو ارفع ملف CSV إذا كان الرابط محمي.
+                    يتم تحديث الأسماء والأسعار تلقائياً من جوجل شيت. يمكنك الضغط للتحديث يدوياً.
                 </p>
-                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-bold py-2 px-4 rounded-lg mb-3">
-                    <i class="fa-solid fa-cloud-arrow-down"></i> تحديث البيانات من الرابط
+                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-bold py-3 rounded-lg mb-3 shadow-md active:scale-95">
+                    <i class="fa-solid fa-arrows-rotate"></i> تحديث الآن من الرابط
                 </button>
-                
-                <div class="relative">
-                    <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
-                    <button onclick="document.getElementById('csv-upload').click()" class="w-full bg-transparent border border-brand-sky text-brand-sky font-bold py-2 px-4 rounded-lg">
-                        <i class="fa-solid fa-file-arrow-up"></i> رفع ملف CSV يدوياً
-                    </button>
-                </div>
-                <p id="db-status" class="text-xs text-green-400 mt-3 text-center">المنتجات في الذاكرة: 0</p>
+                <p id="db-status" class="text-xs text-green-400 text-center font-mono">المنتجات في الذاكرة: 0</p>
             </div>
 
-            <div class="glass-panel p-5 rounded-2xl border-red-900 border">
-                <h3 class="text-red-400 font-bold mb-3">إدارة الجرد</h3>
-                <p class="text-xs text-gray-400 mb-4">احذر يا أبو جواهر، هذا الزر بمسح كل الجرد الحالي!</p>
-                <button onclick="clearInventory()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
-                    <i class="fa-solid fa-trash-can"></i> مسح الجرد الحالي
+            <div class="glass-panel p-5 rounded-2xl border-red-900/50 border">
+                <h3 class="text-red-400 font-bold mb-3">إدارة البيانات</h3>
+                <button onclick="clearInventory()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md active:scale-95">
+                    <i class="fa-solid fa-trash-can"></i> مسح كامل الجرد الحالي
                 </button>
             </div>
         </section>
@@ -172,68 +168,73 @@
 
     <!-- Hidden PDF Template -->
     <div id="pdf-container">
-        <h2 style="text-align: center; color: #40E0D0; margin-bottom: 5px;">تقرير جرد مخزن يونيبرس</h2>
-        <p style="text-align: center; font-size: 12px; color: #666; margin-bottom: 20px;">المسؤول: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
+        <h2 style="text-align: center; color: #000; margin: 0 0 5px 0; font-size: 18px;">تقرير جرد مخزن يونيبرس - موديعين</h2>
+        <p style="text-align: center; font-size: 10px; color: #444; margin: 0 0 15px 0;">المسؤول: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
         
-        <div style="display: grid; grid-template-cols: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; border: 1px solid #000; padding: 10px; background-color: #f9f9f9;">
-            <div style="text-align: center;">
-                <p style="font-size: 10px; margin: 0;">عدد الأصناف (موجب)</p>
-                <strong id="pdf-count" style="font-size: 16px;">0</strong>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; border: 1px solid #000; padding: 10px; background-color: #f9f9f9;">
+            <div style="text-align: center; border-left: 1px solid #ddd;">
+                <p style="font-size: 8px; margin: 0;">أصناف معدودة</p>
+                <strong id="pdf-count" style="font-size: 13px;">0</strong>
             </div>
-            <div style="text-align: center; border-right: 1px solid #ddd; border-left: 1px solid #ddd;">
-                <p style="font-size: 10px; margin: 0;">إجمالي الكميات (موجب)</p>
-                <strong id="pdf-pos" style="font-size: 16px;">0</strong>
+            <div style="text-align: center; border-left: 1px solid #ddd;">
+                <p style="font-size: 8px; margin: 0;">إجمالي الكمية (+)</p>
+                <strong id="pdf-pos" style="font-size: 13px;">0</strong>
+            </div>
+            <div style="text-align: center; border-left: 1px solid #ddd;">
+                <p style="font-size: 8px; margin: 0;">القيمة الإجمالية</p>
+                <strong id="pdf-total-money" style="font-size: 13px;">0 ₪</strong>
             </div>
             <div style="text-align: center;">
-                <p style="font-size: 10px; margin: 0;">إجمالي الربح (سالب)</p>
-                <strong id="pdf-neg" style="font-size: 16px; color: red;">0</strong>
+                <p style="font-size: 8px; margin: 0;">ربح المرتجع (-)</p>
+                <strong id="pdf-neg-money" style="font-size: 13px; color: red;">0 ₪</strong>
             </div>
         </div>
 
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th>الباركود</th>
-                    <th>اسم المنتج</th>
-                    <th>السعر</th>
-                    <th>الكمية</th>
+                    <th style="width: 25%">الباركود</th>
+                    <th style="width: 45%">اسم المنتج</th>
+                    <th style="width: 15%">السعر</th>
+                    <th style="width: 15%">الكمية</th>
                 </tr>
             </thead>
             <tbody id="pdf-table-body">
+                <!-- Rows injected here -->
             </tbody>
         </table>
+        
+        <div style="margin-top: 15px; font-size: 9px; text-align: left; color: #777;">
+            طبع بواسطة تطبيق أبو جواهر الذكي.
+        </div>
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-brand-sky text-black px-4 py-2 rounded-full font-bold shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
-        تمت الإضافة بنجاح!
+    <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-brand-sky text-black px-6 py-3 rounded-full font-bold shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none z-50 border-2 border-white">
+        تمت الإضافة!
     </div>
 
     <script>
         // --- State Management ---
-        let productDatabase = {}; // Barcode -> { name, price }
-        let inventory = {}; // Barcode -> { qty, name, price }
-        
+        let productDatabase = {}; 
+        let inventory = {}; 
         const sheetId = '1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc';
 
         // --- Initialization ---
         window.onload = () => {
             loadFromLocalStorage();
             updateUI();
-            
-            // السحب التلقائي من الشيت أول ما يفتح التطبيق
             fetchFromGoogleSheet(true);
             
-            // Auto-search product name when typing barcode
             document.getElementById('barcode-input').addEventListener('input', (e) => {
                 const barcode = e.target.value.trim();
                 const hint = document.getElementById('product-name-hint');
                 if (productDatabase[barcode]) {
-                    hint.textContent = productDatabase[barcode].name + ` (السعر: ${productDatabase[barcode].price})`;
+                    hint.textContent = productDatabase[barcode].name + ` (₪${productDatabase[barcode].price})`;
                     hint.classList.remove('text-red-400');
                     hint.classList.add('text-brand-sky');
                 } else {
-                    hint.textContent = barcode ? 'منتج غير موجود بالقاعدة، سيتم إضافته بدون اسم' : '';
+                    hint.textContent = barcode ? 'منتج جديد (غير مسجل بالشيت)' : '';
                     hint.classList.add('text-red-400');
                     hint.classList.remove('text-brand-sky');
                 }
@@ -246,36 +247,27 @@
                 document.getElementById(`tab-${t}`).classList.remove('active-tab', 'text-brand-turq');
                 document.getElementById(`tab-${t}`).classList.add('text-gray-400');
             });
-            
             document.getElementById(`section-${tabName}`).classList.remove('hidden');
             document.getElementById(`tab-${tabName}`).classList.add('active-tab', 'text-brand-turq');
-            document.getElementById(`tab-${tabName}`).classList.remove('text-gray-400');
-
-            if(tabName === 'scan') {
-                document.getElementById('barcode-input').focus();
-            }
+            if(tabName === 'scan') document.getElementById('barcode-input').focus();
         }
 
         // --- Core Logic ---
         function handleAddItem(e) {
             e.preventDefault();
-            const barcodeInput = document.getElementById('barcode-input');
-            const qtyInput = document.getElementById('qty-input');
-            
-            const barcode = barcodeInput.value.trim();
-            const qty = parseFloat(qtyInput.value) || 0;
+            const bIn = document.getElementById('barcode-input');
+            const qIn = document.getElementById('qty-input');
+            const barcode = bIn.value.trim();
+            const qty = parseFloat(qIn.value) || 0;
 
-            if (!barcode || qty === 0) {
-                showToast('الرجاء إدخال باركود وكمية صحيحة!');
-                return;
-            }
+            if (!barcode || qty === 0) return;
 
             let name = "منتج غير معروف";
             let price = 0;
 
             if (productDatabase[barcode]) {
                 name = productDatabase[barcode].name;
-                price = productDatabase[barcode].price;
+                price = parseFloat(productDatabase[barcode].price) || 0;
             }
 
             if (inventory[barcode]) {
@@ -290,21 +282,16 @@
 
             saveToLocalStorage();
             updateUI();
-            
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-
-            barcodeInput.value = '';
-            qtyInput.value = '1';
+            if (navigator.vibrate) navigator.vibrate(40);
+            bIn.value = '';
+            qIn.value = '1';
             document.getElementById('product-name-hint').textContent = '';
-            barcodeInput.focus();
-            
-            showToast('تمت الإضافة بنجاح!');
+            bIn.focus();
+            showToast('تم الحفظ بنجاح 👍');
         }
 
         function deleteItem(barcode) {
-            if(confirm('متأكد بدك تحذف هذا المنتج من الجرد؟')) {
+            if(confirm('متأكد بدك تحذف الصنف؟')) {
                 delete inventory[barcode];
                 saveToLocalStorage();
                 updateUI();
@@ -313,69 +300,70 @@
 
         function adjustQty(amount) {
             const input = document.getElementById('qty-input');
-            let current = parseFloat(input.value) || 0;
-            input.value = current + amount;
+            input.value = (parseFloat(input.value) || 0) + amount;
         }
 
         function calculateTotals() {
-            let positiveSum = 0;
-            let negativeSum = 0;
-            let positiveItemCount = 0;
+            let posSum = 0;
+            let negSum = 0;
+            let posCount = 0;
+            let totalVal = 0;
+            let extraProfit = 0; // From negatives
 
-            for (const key in inventory) {
-                const item = inventory[key];
-                if (item.qty > 0) {
-                    positiveSum += item.qty;
-                    positiveItemCount++;
-                } else if (item.qty < 0) {
-                    negativeSum += item.qty;
+            for (const b in inventory) {
+                const item = inventory[b];
+                const p = parseFloat(item.price) || 0;
+                const q = parseFloat(item.qty) || 0;
+                const rowVal = p * q;
+
+                totalVal += rowVal;
+
+                if (q > 0) {
+                    posSum += q;
+                    posCount++;
+                } else if (q < 0) {
+                    negSum += q;
+                    extraProfit += Math.abs(rowVal);
                 }
             }
-
-            return { positiveSum, negativeSum, positiveItemCount };
+            return { posSum, negSum, posCount, totalVal, extraProfit };
         }
 
-        // --- UI Updates ---
         function updateUI() {
-            const totals = calculateTotals();
-            document.getElementById('stat-positive').textContent = totals.positiveSum;
-            document.getElementById('stat-negative').textContent = totals.negativeSum;
+            const t = calculateTotals();
+            document.getElementById('stat-money').textContent = t.totalVal.toLocaleString() + " ₪";
+            document.getElementById('stat-neg-money').textContent = t.extraProfit.toLocaleString() + " ₪";
+            document.getElementById('stat-positive').textContent = t.posSum;
+            document.getElementById('stat-negative').textContent = t.negSum;
             
             const keys = Object.keys(inventory);
             document.getElementById('item-count').textContent = keys.length;
-
-            const listContainer = document.getElementById('inventory-list');
-            const emptyState = document.getElementById('empty-state');
-            
-            listContainer.innerHTML = '';
+            const container = document.getElementById('inventory-list');
+            const empty = document.getElementById('empty-state');
+            container.innerHTML = '';
 
             if (keys.length === 0) {
-                emptyState.classList.remove('hidden');
+                empty.classList.remove('hidden');
             } else {
-                emptyState.classList.add('hidden');
-                
-                const sortedKeys = [...keys].reverse();
-                sortedKeys.forEach(barcode => {
-                    const item = inventory[barcode];
-                    const isNegative = item.qty < 0;
-                    const qtyColor = isNegative ? 'text-red-400' : 'text-brand-turq';
-                    const badge = isNegative ? '<span class="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded ml-2">ربح/مرتجع</span>' : '';
-
+                empty.classList.add('hidden');
+                [...keys].reverse().forEach(b => {
+                    const item = inventory[b];
+                    const isNeg = item.qty < 0;
                     const el = document.createElement('div');
-                    el.className = 'glass-panel p-3 rounded-lg flex justify-between items-center';
+                    el.className = 'glass-panel p-3 rounded-xl flex justify-between items-center animate-in fade-in slide-in-from-top-2 duration-300';
                     el.innerHTML = `
                         <div class="flex-1">
-                            <h4 class="font-bold text-sm text-white">${item.name} ${badge}</h4>
-                            <p class="text-xs text-brand-sky">باركود: ${barcode} | السعر: ${item.price}</p>
+                            <h4 class="font-bold text-sm text-white">${item.name} ${isNeg ? '<span class="text-[10px] bg-red-900 px-1 rounded">ربح</span>':''}</h4>
+                            <p class="text-[10px] text-brand-sky">B: ${b} | ₪${item.price}</p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-lg font-bold ${qtyColor}" dir="ltr">${item.qty}</span>
-                            <button onclick="deleteItem('${barcode}')" class="text-gray-400 hover:text-red-500 p-2">
-                                <i class="fa-solid fa-trash"></i>
+                        <div class="flex items-center gap-4">
+                            <span class="text-lg font-bold ${isNeg?'text-red-400':'text-brand-turq'}" dir="ltr">${item.qty}</span>
+                            <button onclick="deleteItem('${b}')" class="text-gray-500 hover:text-red-500 transition-colors">
+                                <i class="fa-solid fa-circle-xmark text-xl"></i>
                             </button>
                         </div>
                     `;
-                    listContainer.appendChild(el);
+                    container.appendChild(el);
                 });
             }
         }
@@ -384,118 +372,85 @@
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.remove('opacity-0');
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-            }, 2000);
+            setTimeout(() => toast.classList.add('opacity-0'), 2000);
         }
 
-        // --- Storage ---
+        // --- Storage & DB ---
         function saveToLocalStorage() {
             localStorage.setItem('abu_jawaher_inventory', JSON.stringify(inventory));
             localStorage.setItem('abu_jawaher_db', JSON.stringify(productDatabase));
         }
 
         function loadFromLocalStorage() {
-            const savedInv = localStorage.getItem('abu_jawaher_inventory');
-            const savedDb = localStorage.getItem('abu_jawaher_db');
-            
-            if (savedInv) inventory = JSON.parse(savedInv);
-            if (savedDb) productDatabase = JSON.parse(savedDb);
-            
+            const sI = localStorage.getItem('abu_jawaher_inventory');
+            const sD = localStorage.getItem('abu_jawaher_db');
+            if (sI) inventory = JSON.parse(sI);
+            if (sD) productDatabase = JSON.parse(sD);
             updateDbStatus();
         }
 
         function clearInventory() {
-            if(confirm('يا أبو جواهر، متأكد بدك تمسح كل الجرد الحالي؟ هذي الخطوة ما بترجع!')) {
+            if(confirm('يا أبو جواهر، متأكد بدك تصفر كل الجرد؟')) {
                 inventory = {};
                 saveToLocalStorage();
                 updateUI();
                 switchTab('scan');
-                showToast('تم مسح الجرد');
+                showToast('تم التصفير');
             }
         }
 
-        // --- Data Fetching ---
-        async function fetchFromGoogleSheet(isSilent = false) {
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${new Date().getTime()}`;
-            
+        async function fetchFromGoogleSheet(silent = false) {
+            const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${Date.now()}`;
             try {
-                if(!isSilent) showToast('جاري السحب من الشيت...');
-                Papa.parse(csvUrl, {
+                if(!silent) showToast('جاري السحب...');
+                Papa.parse(url, {
                     download: true,
                     header: false,
-                    complete: function(results) {
-                        processCSVData(results.data);
-                        if(!isSilent) showToast('تم تحديث قاعدة المنتجات بنجاح!');
-                    },
-                    error: function(err) {
-                        console.error(err);
-                        if(!isSilent) alert('خطأ في السحب، تأكد من إعدادات المشاركة في الشيت.');
+                    complete: (res) => {
+                        productDatabase = {};
+                        res.data.forEach((row, idx) => {
+                            if (row.length < 2) return;
+                            let b = row[0]?.toString().trim();
+                            let n = row[1]?.toString().trim();
+                            let p = row[2]?.toString().trim() || '0';
+                            if (idx === 0 && (b.includes('باركود') || n.includes('اسم'))) return;
+                            if (b) productDatabase[b] = { name: n || "صنف", price: p };
+                        });
+                        saveToLocalStorage();
+                        updateDbStatus();
+                        updateUI();
+                        if(!silent) showToast('تم التحديث بنجاح ✅');
                     }
                 });
-            } catch (error) {
-                if(!isSilent) alert('خطأ في الاتصال.');
-            }
-        }
-
-        function handleCSVUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            Papa.parse(file, {
-                header: false,
-                complete: function(results) {
-                    processCSVData(results.data);
-                    showToast('تم رفع الملف وتحديث المنتجات!');
-                }
-            });
-        }
-
-        function processCSVData(data) {
-            productDatabase = {};
-            data.forEach((row, index) => {
-                if (row.length < 2) return;
-                let barcode = row[0] ? row[0].toString().trim() : '';
-                let name = row[1] ? row[1].toString().trim() : '';
-                let price = row[2] ? row[2].toString().trim() : '0';
-                if (index === 0 && (barcode.includes('باركود') || name.includes('اسم'))) return;
-                if (barcode) {
-                    productDatabase[barcode] = { name: name || "بدون اسم", price: price };
-                }
-            });
-            saveToLocalStorage();
-            updateDbStatus();
-            updateUI();
+            } catch (e) { if(!silent) alert('فشل الاتصال بالشيت!'); }
         }
 
         function updateDbStatus() {
             document.getElementById('db-status').textContent = `المنتجات في الذاكرة: ${Object.keys(productDatabase).length}`;
         }
 
-        // --- PDF Generation ---
+        // --- PDF & Printing ---
         function generatePDF() {
-            const totals = calculateTotals();
-            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG');
-            
-            // تعبئة البيانات في الهيدر الجديد
-            document.getElementById('pdf-count').textContent = totals.positiveItemCount;
-            document.getElementById('pdf-pos').textContent = totals.positiveSum;
-            document.getElementById('pdf-neg').textContent = totals.negativeSum;
+            const t = calculateTotals();
+            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+            document.getElementById('pdf-count').textContent = t.posCount;
+            document.getElementById('pdf-pos').textContent = t.posSum;
+            document.getElementById('pdf-total-money').textContent = t.totalVal.toLocaleString() + " ₪";
+            document.getElementById('pdf-neg-money').textContent = t.extraProfit.toLocaleString() + " ₪";
 
             const tbody = document.getElementById('pdf-table-body');
             tbody.innerHTML = '';
-
-            for (const barcode in inventory) {
-                const item = inventory[barcode];
+            for (const b in inventory) {
+                const item = inventory[b];
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td dir="ltr">${barcode}</td>
+                    <td dir="ltr">${b}</td>
                     <td>${item.name}</td>
-                    <td dir="ltr">${item.price}</td>
-                    <td dir="ltr" style="${item.qty < 0 ? 'color: red;' : ''}">${item.qty}</td>
+                    <td dir="ltr">${item.price} ₪</td>
+                    <td dir="ltr" style="${item.qty < 0 ? 'color: red; font-weight: bold;' : ''}">${item.qty}</td>
                 `;
                 tbody.appendChild(tr);
             }
-
             window.print();
         }
     </script>
