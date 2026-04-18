@@ -172,12 +172,22 @@
 
     <!-- Hidden PDF Template -->
     <div id="pdf-container">
-        <h2 style="text-align: center; color: #40E0D0;">تقرير جرد مخزن يونيبرس</h2>
-        <p style="text-align: center; font-size: 12px; color: #666;">المسؤول: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
+        <h2 style="text-align: center; color: #40E0D0; margin-bottom: 5px;">تقرير جرد مخزن يونيبرس</h2>
+        <p style="text-align: center; font-size: 12px; color: #666; margin-bottom: 20px;">المسؤول: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
         
-        <div style="display: flex; justify-content: space-around; margin: 20px 0; border: 1px solid #ddd; padding: 10px;">
-            <div>المجموع المعدود: <strong id="pdf-pos">0</strong></div>
-            <div>إجمالي الربح/السالب: <strong id="pdf-neg">0</strong></div>
+        <div style="display: grid; grid-template-cols: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; border: 1px solid #000; padding: 10px; background-color: #f9f9f9;">
+            <div style="text-align: center;">
+                <p style="font-size: 10px; margin: 0;">عدد الأصناف (موجب)</p>
+                <strong id="pdf-count" style="font-size: 16px;">0</strong>
+            </div>
+            <div style="text-align: center; border-right: 1px solid #ddd; border-left: 1px solid #ddd;">
+                <p style="font-size: 10px; margin: 0;">إجمالي الكميات (موجب)</p>
+                <strong id="pdf-pos" style="font-size: 16px;">0</strong>
+            </div>
+            <div style="text-align: center;">
+                <p style="font-size: 10px; margin: 0;">إجمالي الربح (سالب)</p>
+                <strong id="pdf-neg" style="font-size: 16px; color: red;">0</strong>
+            </div>
         </div>
 
         <table class="pdf-table">
@@ -270,7 +280,6 @@
 
             if (inventory[barcode]) {
                 inventory[barcode].qty += qty;
-                // تحديث الاسم والسعر دائماً لأحدث نسخة من قاعدة البيانات
                 if (productDatabase[barcode]) {
                     inventory[barcode].name = name;
                     inventory[barcode].price = price;
@@ -282,12 +291,10 @@
             saveToLocalStorage();
             updateUI();
             
-            // اهتزاز خفيف للآيفون لتأكيد الإضافة
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
 
-            // Reset form
             barcodeInput.value = '';
             qtyInput.value = '1';
             document.getElementById('product-name-hint').textContent = '';
@@ -313,17 +320,19 @@
         function calculateTotals() {
             let positiveSum = 0;
             let negativeSum = 0;
+            let positiveItemCount = 0;
 
             for (const key in inventory) {
                 const item = inventory[key];
                 if (item.qty > 0) {
                     positiveSum += item.qty;
+                    positiveItemCount++;
                 } else if (item.qty < 0) {
-                    negativeSum += item.qty; // Keeps it negative as requested
+                    negativeSum += item.qty;
                 }
             }
 
-            return { positiveSum, negativeSum };
+            return { positiveSum, negativeSum, positiveItemCount };
         }
 
         // --- UI Updates ---
@@ -345,8 +354,8 @@
             } else {
                 emptyState.classList.add('hidden');
                 
-                // Sort: newest first (assuming object iteration order, but better to reverse keys)
-                keys.reverse().forEach(barcode => {
+                const sortedKeys = [...keys].reverse();
+                sortedKeys.forEach(barcode => {
                     const item = inventory[barcode];
                     const isNegative = item.qty < 0;
                     const qtyColor = isNegative ? 'text-red-400' : 'text-brand-turq';
@@ -406,37 +415,34 @@
             }
         }
 
-        // --- Data Fetching (Google Sheets / CSV) ---
+        // --- Data Fetching ---
         async function fetchFromGoogleSheet(isSilent = false) {
-            // اضافة وقت للكاش عشان ما يعلق ع القديم (Cache Buster)
             const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${new Date().getTime()}`;
             
             try {
                 if(!isSilent) showToast('جاري السحب من الشيت...');
-                // We use PapaParse with download config
                 Papa.parse(csvUrl, {
                     download: true,
-                    header: false, // لغينا الاعتماد على العناوين عشان ما يلخبط
+                    header: false,
                     complete: function(results) {
                         processCSVData(results.data);
                         if(!isSilent) showToast('تم تحديث قاعدة المنتجات بنجاح!');
                     },
                     error: function(err) {
                         console.error(err);
-                        if(!isSilent) alert('ما قدرنا نسحب من الرابط، تأكد إنو الشيت منشور للويب، أو استخدم خيار "رفع ملف CSV يدوياً".');
+                        if(!isSilent) alert('خطأ في السحب، تأكد من إعدادات المشاركة في الشيت.');
                     }
                 });
             } catch (error) {
-                if(!isSilent) alert('خطأ في الاتصال بالانترنت أو الرابط.');
+                if(!isSilent) alert('خطأ في الاتصال.');
             }
         }
 
         function handleCSVUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             Papa.parse(file, {
-                header: false, // لغينا الاعتماد على العناوين
+                header: false,
                 complete: function(results) {
                     processCSVData(results.data);
                     showToast('تم رفع الملف وتحديث المنتجات!');
@@ -445,32 +451,19 @@
         }
 
         function processCSVData(data) {
-            let count = 0;
-            productDatabase = {}; // Reset
-
+            productDatabase = {};
             data.forEach((row, index) => {
-                if (row.length < 2) return; // تخطي الأسطر الفاضية
-
-                // الترتيب ثابت: العمود الأول (A) باركود، الثاني (B) اسم، الثالث (C) سعر
+                if (row.length < 2) return;
                 let barcode = row[0] ? row[0].toString().trim() : '';
                 let name = row[1] ? row[1].toString().trim() : '';
                 let price = row[2] ? row[2].toString().trim() : '0';
-
-                // تخطي السطر الأول إذا كان يحتوي على كلمات العناوين (باركود، اسم، الخ) عشان ما ينحسب منتج
-                if (index === 0 && (barcode.includes('باركود') || barcode.includes('Barcode') || name.includes('اسم'))) {
-                    return; 
-                }
-
+                if (index === 0 && (barcode.includes('باركود') || name.includes('اسم'))) return;
                 if (barcode) {
                     productDatabase[barcode] = { name: name || "بدون اسم", price: price };
-                    count++;
                 }
             });
-
             saveToLocalStorage();
             updateDbStatus();
-            
-            // تحديث واجهة المستخدم بعد تنزيل داتا جديدة عشان لو في اسم منتج تعدل يتحدث بالقائمة
             updateUI();
         }
 
@@ -482,6 +475,9 @@
         function generatePDF() {
             const totals = calculateTotals();
             document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG');
+            
+            // تعبئة البيانات في الهيدر الجديد
+            document.getElementById('pdf-count').textContent = totals.positiveItemCount;
             document.getElementById('pdf-pos').textContent = totals.positiveSum;
             document.getElementById('pdf-neg').textContent = totals.negativeSum;
 
@@ -500,7 +496,6 @@
                 tbody.appendChild(tr);
             }
 
-            // استخدام نظام الطباعة الأصلي للآيفون لحل مشكلة اللغة العربية
             window.print();
         }
     </script>
