@@ -36,13 +36,15 @@
         .pdf-table th { background-color: #f2f2f2; }
         
         @media print {
-            html, body { background-color: #ffffff !important; color: #000000 !important; height: 100%; }
-            body * { visibility: hidden; }
-            #pdf-container, #pdf-container * { visibility: visible; color: #000000 !important; }
-            #pdf-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; direction: rtl; background-color: #ffffff !important; min-height: 100vh; padding: 0; margin: 0; }
+            html, body { background-color: #ffffff !important; color: #000000 !important; }
+            /* إخفاء كل محتويات الصفحة تماماً ما عدا حاوية الطباعة عشان ما يعمل صفحة فارغة */
+            body > *:not(#pdf-container) { display: none !important; }
+            #pdf-container, #pdf-container * { color: #000000 !important; }
+            #pdf-container { display: block !important; width: 100%; direction: rtl; background-color: #ffffff !important; padding: 0; margin: 0; }
             .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
             .pdf-table th, .pdf-table td { border: 1px solid #000000 !important; padding: 8px; text-align: right; }
             .pdf-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { margin: 10mm; }
         }
     </style>
 </head>
