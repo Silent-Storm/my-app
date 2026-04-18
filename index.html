@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>جرد مخزن يونيبرس - أبو جواهر</title>
+    <title>جرد يونيبرس - أبو جواهر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,445 +12,336 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            dark: '#000000',
-                            turq: '#40E0D0',
-                            sky: '#87CEEB',
-                            gray: '#1f2937'
-                        }
+                        brand: { dark: '#000000', turq: '#40E0D0', sky: '#87CEEB', gray: '#1f2937' }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000; color: #fff; }
-        .glass-panel { background: rgba(31, 41, 55, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(64, 224, 208, 0.2); }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .active-tab { border-bottom: 2px solid #40E0D0; color: #40E0D0; }
+        body { font-family: -apple-system, sans-serif; background-color: #000; color: #fff; overflow-x: hidden; }
+        .glass-panel { background: rgba(31, 41, 55, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(64, 224, 208, 0.2); }
+        .active-tab { border-bottom: 3px solid #40E0D0; color: #40E0D0; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         
-        /* PDF specific styles */
-        #pdf-container { display: none; background: white; color: black; padding: 15px; direction: rtl; box-sizing: border-box; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; }
-        .pdf-table th { background-color: #f2f2f2; }
-        
+        /* Print Fixes for Zero Extra Pages */
+        #pdf-container { display: none; background: white; color: black; padding: 0; margin: 0; direction: rtl; }
         @media print {
-            html, body { background-color: #ffffff !important; color: #000000 !important; margin: 0; padding: 0; height: auto; }
+            @page { margin: 0; size: auto; }
+            html, body { background: white !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
             body > *:not(#pdf-container) { display: none !important; }
-            #pdf-container { display: block !important; width: 100%; position: relative; background-color: #ffffff !important; margin: 0; padding: 0; }
-            .pdf-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            @page { margin: 5mm; size: auto; }
+            #pdf-container { display: block !important; width: 100%; position: relative; padding: 10mm; box-sizing: border-box; }
+            .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 11px; color: black !important; }
+            .pdf-table th { background: #eee !important; -webkit-print-color-adjust: exact; }
         }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-24">
 
     <!-- Header -->
-    <header class="bg-brand-dark border-b border-brand-turq p-4 sticky top-0 z-10 shadow-lg shadow-brand-turq/20">
+    <header class="bg-brand-dark border-b border-brand-turq p-4 sticky top-0 z-50 shadow-md">
         <div class="flex justify-between items-center max-w-lg mx-auto">
             <div>
-                <h1 class="text-xl font-bold text-brand-sky">جرد مخزن يونيبرس</h1>
-                <p class="text-xs text-brand-turq">إشراف: أبو جواهر</p>
+                <h1 class="text-lg font-bold text-brand-sky">يونيبرس - موديعين</h1>
+                <p class="text-[10px] text-brand-turq">بإشراف أبو جواهر 0546588897</p>
             </div>
-            <div class="text-2xl text-brand-turq">
-                <i class="fa-solid fa-boxes-stacked"></i>
-            </div>
+            <i class="fa-solid fa-warehouse text-brand-turq text-xl"></i>
         </div>
     </header>
 
-    <!-- Navigation Tabs -->
-    <div class="flex justify-around max-w-lg mx-auto mt-4 px-2 border-b border-gray-700">
-        <button onclick="switchTab('scan')" id="tab-scan" class="flex-1 py-2 text-center text-sm font-semibold active-tab transition-colors">
-            <i class="fa-solid fa-barcode mb-1 block"></i> الجرد
-        </button>
-        <button onclick="switchTab('list')" id="tab-list" class="flex-1 py-2 text-center text-sm font-semibold text-gray-400 transition-colors">
-            <i class="fa-solid fa-list-check mb-1 block"></i> القائمة (<span id="item-count">0</span>)
-        </button>
-        <button onclick="switchTab('settings')" id="tab-settings" class="flex-1 py-2 text-center text-sm font-semibold text-gray-400 transition-colors">
-            <i class="fa-solid fa-gear mb-1 block"></i> الإعدادات
-        </button>
-    </div>
+    <!-- Navigation -->
+    <nav class="flex justify-around max-w-lg mx-auto bg-brand-dark/90 sticky top-[65px] z-40 border-b border-gray-800">
+        <button onclick="switchTab('scan')" id="tab-scan" class="flex-1 py-3 text-center text-xs active-tab"><i class="fa-solid fa-plus-circle mb-1 block"></i>جرد</button>
+        <button onclick="switchTab('list')" id="tab-list" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-clipboard-list mb-1 block"></i>المعدود</button>
+        <button onclick="switchTab('missing')" id="tab-missing" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-eye-slash mb-1 block"></i>المنسي</button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-cog mb-1 block"></i>ضبط</button>
+    </nav>
 
-    <!-- Main Content Area -->
     <main class="max-w-lg mx-auto p-4">
-
-        <!-- Tab 1: Scanner & Input -->
-        <section id="section-scan" class="block">
-            <!-- Stats Dashboard -->
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="glass-panel p-4 rounded-xl text-center">
-                    <p class="text-[10px] text-gray-300">إجمالي القيمة (₪)</p>
-                    <p class="text-xl font-bold text-brand-sky mt-1" id="stat-money">0</p>
-                </div>
-                <div class="glass-panel p-4 rounded-xl text-center">
-                    <p class="text-[10px] text-gray-300">ربح المرتجع (₪)</p>
-                    <p class="text-xl font-bold text-red-400 mt-1" id="stat-neg-money">0</p>
+        
+        <!-- Tab: Scan/Add -->
+        <section id="section-scan" class="block space-y-4">
+            <div class="grid grid-cols-2 gap-2">
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <span class="text-[10px] text-gray-400 block">إجمالي القيمة</span>
+                    <span id="stat-money" class="text-lg font-bold text-brand-sky">0 ₪</span>
                 </div>
                 <div class="glass-panel p-3 rounded-xl text-center">
-                    <p class="text-[10px] text-gray-300">مجموع الكميات</p>
-                    <p class="text-lg font-bold text-white mt-1" id="stat-positive">0</p>
-                </div>
-                <div class="glass-panel p-3 rounded-xl text-center">
-                    <p class="text-[10px] text-gray-300">إجمالي السالب</p>
-                    <p class="text-lg font-bold text-red-400 mt-1" id="stat-negative">0</p>
+                    <span class="text-[10px] text-gray-400 block">ربح المرتجع</span>
+                    <span id="stat-neg-money" class="text-lg font-bold text-red-400">0 ₪</span>
                 </div>
             </div>
 
-            <div class="glass-panel p-5 rounded-2xl shadow-lg">
-                <form id="add-form" onsubmit="handleAddItem(event)">
-                    <div class="mb-4">
-                        <label class="block text-sm text-brand-turq mb-1">الباركود</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-brand-turq pointer-events-none"></i>
-                            <input type="text" id="barcode-input" inputmode="numeric" pattern="[0-9]*" class="w-full bg-brand-dark border border-gray-600 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-brand-turq text-lg" placeholder="امسح أو اكتب الباركود..." required autofocus>
-                        </div>
-                        <p id="product-name-hint" class="text-xs text-brand-sky mt-2 h-4 overflow-hidden text-ellipsis whitespace-nowrap"></p>
+            <div class="glass-panel p-5 rounded-2xl">
+                <form onsubmit="handleAddItem(event)" class="space-y-4">
+                    <div>
+                        <label class="text-xs text-brand-turq">الباركود</label>
+                        <input type="text" id="barcode-input" inputmode="numeric" class="w-full bg-black border border-gray-700 rounded-lg p-3 mt-1 text-white focus:border-brand-turq outline-none" placeholder="اضرب الباركود..." required autofocus>
+                        <div id="product-name-hint" class="text-[11px] mt-2 h-4 text-brand-sky italic"></div>
                     </div>
-
-                    <div class="mb-6">
-                        <label class="block text-sm text-brand-turq mb-1">الكمية (موجب جرد، سالب ربح)</label>
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="adjustQty(-1)" class="bg-gray-700 w-12 h-12 rounded-lg text-xl hover:bg-gray-600 text-white">-</button>
-                            <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-brand-dark border border-gray-600 rounded-lg py-3 text-center text-xl text-white focus:outline-none focus:border-brand-turq" required>
-                            <button type="button" onclick="adjustQty(1)" class="bg-brand-turq w-12 h-12 rounded-lg text-xl text-black font-bold hover:bg-brand-sky">+</button>
+                    <div>
+                        <label class="text-xs text-brand-turq">الكمية (سالب للربح)</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="adjustQty(-1)" class="w-12 bg-gray-800 rounded-lg text-xl">-</button>
+                            <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-black border border-gray-700 rounded-lg p-3 text-center text-xl outline-none">
+                            <button type="button" onclick="adjustQty(1)" class="w-12 bg-brand-turq text-black rounded-lg text-xl font-bold">+</button>
                         </div>
                     </div>
-
-                    <button type="submit" class="w-full bg-brand-sky hover:bg-brand-turq text-black font-bold py-4 rounded-xl transition-colors flex justify-center items-center gap-2 shadow-lg active:scale-95">
-                        <i class="fa-solid fa-plus text-lg"></i> إضافة للجرد
+                    <button type="submit" class="w-full bg-brand-sky text-black font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">
+                        إضافة للجرد
                     </button>
                 </form>
             </div>
         </section>
 
-        <!-- Tab 2: Inventory List -->
-        <section id="section-list" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-brand-turq">قائمة الجرد الحالية</h2>
-                <button onclick="generatePDF()" class="bg-brand-sky text-black px-4 py-2 rounded-lg text-sm font-bold shadow-md active:scale-95">
-                    <i class="fa-solid fa-file-pdf"></i> تحميل PDF
-                </button>
+        <!-- Tab: List -->
+        <section id="section-list" class="hidden space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-sm font-bold">الأصناف المعدودة (<span id="item-count">0</span>)</h2>
+                <button onclick="generatePDF()" class="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-lg"><i class="fa-solid fa-print"></i> طباعة PDF</button>
             </div>
-            
-            <div id="inventory-list" class="space-y-3">
-                <!-- Items injected here -->
-            </div>
-            
-            <div id="empty-state" class="text-center py-10 text-gray-500 hidden">
-                <i class="fa-solid fa-box-open text-4xl mb-3"></i>
-                <p>القائمة فارغة يا أبو جواهر، ابدأ الجرد!</p>
-            </div>
+            <div id="inventory-list" class="space-y-2"></div>
+            <div id="list-empty" class="text-center py-10 text-gray-600 hidden">ما عديت إشي لسا!</div>
         </section>
 
-        <!-- Tab 3: Settings & Data -->
-        <section id="section-settings" class="hidden">
-            <div class="glass-panel p-5 rounded-2xl mb-4">
-                <h3 class="text-brand-turq font-bold mb-3 border-b border-gray-700 pb-2">قاعدة بيانات يونيبرس</h3>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    يتم تحديث الأسماء والأسعار تلقائياً من جوجل شيت. يمكنك الضغط للتحديث يدوياً.
-                </p>
-                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-bold py-3 rounded-lg mb-3 shadow-md active:scale-95">
-                    <i class="fa-solid fa-arrows-rotate"></i> تحديث الآن من الرابط
-                </button>
-                <p id="db-status" class="text-xs text-green-400 text-center font-mono">المنتجات في الذاكرة: 0</p>
+        <!-- Tab: Missing Products (المنسي) -->
+        <section id="section-missing" class="hidden space-y-3">
+            <div class="px-1">
+                <h2 class="text-sm font-bold text-red-400 underline">أصناف موجودة بالشيت ولم تُعد (<span id="missing-count">0</span>)</h2>
+                <p class="text-[10px] text-gray-500 mt-1">هاي المنتجات مسجلة في جوجل بس إنت لسا ما جردتها بالمخزن.</p>
             </div>
+            <div id="missing-list" class="space-y-2"></div>
+        </section>
 
-            <div class="glass-panel p-5 rounded-2xl border-red-900/50 border">
-                <h3 class="text-red-400 font-bold mb-3">إدارة البيانات</h3>
-                <button onclick="clearInventory()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md active:scale-95">
-                    <i class="fa-solid fa-trash-can"></i> مسح كامل الجرد الحالي
-                </button>
+        <!-- Tab: Settings -->
+        <section id="section-settings" class="hidden space-y-4">
+            <div class="glass-panel p-5 rounded-2xl">
+                <h3 class="text-brand-turq font-bold mb-2">مزامنة البيانات</h3>
+                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-bold py-3 rounded-lg"><i class="fa-solid fa-sync"></i> تحديث من جوجل شيت</button>
+                <p id="db-status" class="text-[10px] text-center mt-3 text-gray-400">المنتجات: 0</p>
             </div>
+            <button onclick="clearInventory()" class="w-full border border-red-900 text-red-500 py-3 rounded-lg text-sm">تصفير الجرد بالكامل</button>
         </section>
 
     </main>
 
-    <!-- Hidden PDF Template -->
+    <!-- PDF Template -->
     <div id="pdf-container">
-        <h2 style="text-align: center; color: #000; margin: 0 0 5px 0; font-size: 18px;">تقرير جرد مخزن يونيبرس - موديعين</h2>
-        <p style="text-align: center; font-size: 10px; color: #444; margin: 0 0 15px 0;">المسؤول: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
+        <h1 style="text-align: center; margin: 0; font-size: 16px;">يونيبرس - تقرير الجرد</h1>
+        <p style="text-align: center; font-size: 9px; margin: 5px 0 10px 0;">المخزنجي: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
         
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; border: 1px solid #000; padding: 10px; background-color: #f9f9f9;">
-            <div style="text-align: center; border-left: 1px solid #ddd;">
-                <p style="font-size: 8px; margin: 0;">أصناف معدودة</p>
-                <strong id="pdf-count" style="font-size: 13px;">0</strong>
-            </div>
-            <div style="text-align: center; border-left: 1px solid #ddd;">
-                <p style="font-size: 8px; margin: 0;">إجمالي الكمية (+)</p>
-                <strong id="pdf-pos" style="font-size: 13px;">0</strong>
-            </div>
-            <div style="text-align: center; border-left: 1px solid #ddd;">
-                <p style="font-size: 8px; margin: 0;">القيمة الإجمالية</p>
-                <strong id="pdf-total-money" style="font-size: 13px;">0 ₪</strong>
-            </div>
-            <div style="text-align: center;">
-                <p style="font-size: 8px; margin: 0;">ربح المرتجع (-)</p>
-                <strong id="pdf-neg-money" style="font-size: 13px; color: red;">0 ₪</strong>
-            </div>
+        <div style="display: flex; justify-content: space-between; border: 1px solid #000; padding: 8px; margin-bottom: 8px; background: #f9f9f9; font-size: 10px;">
+            <div style="text-align: center">أصناف: <b id="pdf-c">0</b></div>
+            <div style="text-align: center">إجمالي ₪: <b id="pdf-m">0</b></div>
+            <div style="text-align: center">ربح ₪: <b id="pdf-nm" style="color:red">0</b></div>
         </div>
 
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th style="width: 25%">الباركود</th>
-                    <th style="width: 45%">اسم المنتج</th>
-                    <th style="width: 15%">السعر</th>
-                    <th style="width: 15%">الكمية</th>
+                    <th>باركود</th>
+                    <th>اسم المنتج</th>
+                    <th>سعر</th>
+                    <th>كمية</th>
                 </tr>
             </thead>
-            <tbody id="pdf-table-body">
-                <!-- Rows injected here -->
-            </tbody>
+            <tbody id="pdf-tbody"></tbody>
         </table>
-        
-        <div style="margin-top: 15px; font-size: 9px; text-align: left; color: #777;">
-            طبع بواسطة تطبيق أبو جواهر الذكي.
-        </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-brand-sky text-black px-6 py-3 rounded-full font-bold shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none z-50 border-2 border-white">
-        تمت الإضافة!
-    </div>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-brand-turq text-black px-6 py-2 rounded-full font-bold opacity-0 transition-opacity z-50"></div>
 
     <script>
-        // --- State Management ---
         let productDatabase = {}; 
         let inventory = {}; 
         const sheetId = '1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc';
 
-        // --- Initialization ---
         window.onload = () => {
-            loadFromLocalStorage();
-            updateUI();
+            loadData();
             fetchFromGoogleSheet(true);
-            
-            document.getElementById('barcode-input').addEventListener('input', (e) => {
-                const barcode = e.target.value.trim();
-                const hint = document.getElementById('product-name-hint');
-                if (productDatabase[barcode]) {
-                    hint.textContent = productDatabase[barcode].name + ` (₪${productDatabase[barcode].price})`;
-                    hint.classList.remove('text-red-400');
-                    hint.classList.add('text-brand-sky');
+            document.getElementById('barcode-input').addEventListener('input', e => {
+                const b = e.target.value.trim();
+                const h = document.getElementById('product-name-hint');
+                if(productDatabase[b]) {
+                    h.textContent = `${productDatabase[b].name} (₪${productDatabase[b].price})`;
                 } else {
-                    hint.textContent = barcode ? 'منتج جديد (غير مسجل بالشيت)' : '';
-                    hint.classList.add('text-red-400');
-                    hint.classList.remove('text-brand-sky');
+                    h.textContent = b ? "صنف جديد.." : "";
                 }
             });
         };
 
-        function switchTab(tabName) {
-            ['scan', 'list', 'settings'].forEach(t => {
-                document.getElementById(`section-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('active-tab', 'text-brand-turq');
-                document.getElementById(`tab-${t}`).classList.add('text-gray-400');
+        function switchTab(t) {
+            ['scan', 'list', 'missing', 'settings'].forEach(s => {
+                document.getElementById(`section-${s}`).classList.add('hidden');
+                document.getElementById(`tab-${s}`).classList.remove('active-tab', 'text-brand-turq');
             });
-            document.getElementById(`section-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).classList.add('active-tab', 'text-brand-turq');
-            if(tabName === 'scan') document.getElementById('barcode-input').focus();
+            document.getElementById(`section-${t}`).classList.remove('hidden');
+            document.getElementById(`tab-${t}`).classList.add('active-tab', 'text-brand-turq');
+            if(t === 'missing') updateMissingList();
+            if(t === 'scan') document.getElementById('barcode-input').focus();
         }
 
-        // --- Core Logic ---
         function handleAddItem(e) {
             e.preventDefault();
-            const bIn = document.getElementById('barcode-input');
-            const qIn = document.getElementById('qty-input');
-            const barcode = bIn.value.trim();
-            const qty = parseFloat(qIn.value) || 0;
+            const bEl = document.getElementById('barcode-input');
+            const qEl = document.getElementById('qty-input');
+            const b = bEl.value.trim();
+            const q = parseFloat(qEl.value) || 0;
 
-            if (!barcode || qty === 0) return;
+            if(!b || q === 0) return;
 
-            let name = "منتج غير معروف";
-            let price = 0;
-
-            if (productDatabase[barcode]) {
-                name = productDatabase[barcode].name;
-                price = parseFloat(productDatabase[barcode].price) || 0;
-            }
-
-            if (inventory[barcode]) {
-                inventory[barcode].qty += qty;
-                if (productDatabase[barcode]) {
-                    inventory[barcode].name = name;
-                    inventory[barcode].price = price;
-                }
+            if(!inventory[b]) {
+                inventory[b] = { 
+                    qty: q, 
+                    name: productDatabase[b]?.name || "صنف غير معروف", 
+                    price: productDatabase[b]?.price || 0 
+                };
             } else {
-                inventory[barcode] = { qty, name, price };
+                inventory[b].qty += q;
             }
 
-            saveToLocalStorage();
+            saveData();
             updateUI();
-            if (navigator.vibrate) navigator.vibrate(40);
-            bIn.value = '';
-            qIn.value = '1';
+            bEl.value = ''; qEl.value = '1';
             document.getElementById('product-name-hint').textContent = '';
-            bIn.focus();
-            showToast('تم الحفظ بنجاح 👍');
-        }
-
-        function deleteItem(barcode) {
-            if(confirm('متأكد بدك تحذف الصنف؟')) {
-                delete inventory[barcode];
-                saveToLocalStorage();
-                updateUI();
-            }
-        }
-
-        function adjustQty(amount) {
-            const input = document.getElementById('qty-input');
-            input.value = (parseFloat(input.value) || 0) + amount;
-        }
-
-        function calculateTotals() {
-            let posSum = 0;
-            let negSum = 0;
-            let posCount = 0;
-            let totalVal = 0;
-            let extraProfit = 0; // From negatives
-
-            for (const b in inventory) {
-                const item = inventory[b];
-                const p = parseFloat(item.price) || 0;
-                const q = parseFloat(item.qty) || 0;
-                const rowVal = p * q;
-
-                totalVal += rowVal;
-
-                if (q > 0) {
-                    posSum += q;
-                    posCount++;
-                } else if (q < 0) {
-                    negSum += q;
-                    extraProfit += Math.abs(rowVal);
-                }
-            }
-            return { posSum, negSum, posCount, totalVal, extraProfit };
+            bEl.focus();
+            if(navigator.vibrate) navigator.vibrate(40);
+            showToast("انضاف بنجاح!");
         }
 
         function updateUI() {
-            const t = calculateTotals();
-            document.getElementById('stat-money').textContent = t.totalVal.toLocaleString() + " ₪";
-            document.getElementById('stat-neg-money').textContent = t.extraProfit.toLocaleString() + " ₪";
-            document.getElementById('stat-positive').textContent = t.posSum;
-            document.getElementById('stat-negative').textContent = t.negSum;
-            
-            const keys = Object.keys(inventory);
-            document.getElementById('item-count').textContent = keys.length;
-            const container = document.getElementById('inventory-list');
-            const empty = document.getElementById('empty-state');
-            container.innerHTML = '';
+            let totalMoney = 0;
+            let negMoney = 0;
+            let count = 0;
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
 
-            if (keys.length === 0) {
-                empty.classList.remove('hidden');
-            } else {
-                empty.classList.add('hidden');
-                [...keys].reverse().forEach(b => {
-                    const item = inventory[b];
-                    const isNeg = item.qty < 0;
-                    const el = document.createElement('div');
-                    el.className = 'glass-panel p-3 rounded-xl flex justify-between items-center animate-in fade-in slide-in-from-top-2 duration-300';
-                    el.innerHTML = `
-                        <div class="flex-1">
-                            <h4 class="font-bold text-sm text-white">${item.name} ${isNeg ? '<span class="text-[10px] bg-red-900 px-1 rounded">ربح</span>':''}</h4>
-                            <p class="text-[10px] text-brand-sky">B: ${b} | ₪${item.price}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-lg font-bold ${isNeg?'text-red-400':'text-brand-turq'}" dir="ltr">${item.qty}</span>
-                            <button onclick="deleteItem('${b}')" class="text-gray-500 hover:text-red-500 transition-colors">
-                                <i class="fa-solid fa-circle-xmark text-xl"></i>
-                            </button>
+            Object.keys(inventory).reverse().forEach(b => {
+                const item = inventory[b];
+                const lineVal = item.price * item.qty;
+                totalMoney += lineVal;
+                if(item.qty < 0) negMoney += Math.abs(lineVal);
+                count++;
+
+                const div = document.createElement('div');
+                div.className = "glass-panel p-3 rounded-xl flex justify-between items-center";
+                div.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold">${item.name} ${item.qty < 0 ? '🔴':''}</div>
+                        <div class="text-[9px] text-brand-sky">${b} | ₪${item.price}</div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold ${item.qty < 0 ? 'text-red-400':'text-brand-turq'}">${item.qty}</span>
+                        <button onclick="deleteItem('${b}')" class="text-gray-500"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            document.getElementById('stat-money').textContent = totalMoney.toLocaleString() + " ₪";
+            document.getElementById('stat-neg-money').textContent = negMoney.toLocaleString() + " ₪";
+            document.getElementById('item-count').textContent = count;
+            document.getElementById('list-empty').classList.toggle('hidden', count > 0);
+        }
+
+        function updateMissingList() {
+            const list = document.getElementById('missing-list');
+            list.innerHTML = '';
+            let mCount = 0;
+
+            Object.keys(productDatabase).forEach(b => {
+                if(!inventory[b]) {
+                    mCount++;
+                    const div = document.createElement('div');
+                    div.className = "glass-panel p-3 rounded-xl opacity-70 border-l-4 border-red-500";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-xs">${productDatabase[b].name}</div>
+                                <div class="text-[9px] text-gray-400">${b}</div>
+                            </div>
+                            <button onclick="setScan('${b}')" class="text-[10px] bg-brand-sky text-black px-2 py-1 rounded">عده هان</button>
                         </div>
                     `;
-                    container.appendChild(el);
-                });
-            }
+                    list.appendChild(div);
+                }
+            });
+            document.getElementById('missing-count').textContent = mCount;
+            if(mCount === 0) list.innerHTML = '<div class="text-center text-xs text-green-400 py-10">مبروك! عديت كل الأصناف اللي بالشيت.</div>';
         }
 
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.remove('opacity-0');
-            setTimeout(() => toast.classList.add('opacity-0'), 2000);
+        function setScan(b) {
+            switchTab('scan');
+            document.getElementById('barcode-input').value = b;
+            document.getElementById('barcode-input').dispatchEvent(new Event('input'));
         }
 
-        // --- Storage & DB ---
-        function saveToLocalStorage() {
-            localStorage.setItem('abu_jawaher_inventory', JSON.stringify(inventory));
-            localStorage.setItem('abu_jawaher_db', JSON.stringify(productDatabase));
+        function deleteItem(b) { if(confirm("بدك تمسحه؟")) { delete inventory[b]; saveData(); updateUI(); } }
+
+        function adjustQty(n) { document.getElementById('qty-input').value = (parseFloat(document.getElementById('qty-input').value)||0) + n; }
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            t.textContent = m; t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 2000);
         }
 
-        function loadFromLocalStorage() {
-            const sI = localStorage.getItem('abu_jawaher_inventory');
-            const sD = localStorage.getItem('abu_jawaher_db');
-            if (sI) inventory = JSON.parse(sI);
-            if (sD) productDatabase = JSON.parse(sD);
+        function saveData() {
+            localStorage.setItem('univ_inv', JSON.stringify(inventory));
+            localStorage.setItem('univ_db', JSON.stringify(productDatabase));
+        }
+
+        function loadData() {
+            inventory = JSON.parse(localStorage.getItem('univ_inv') || '{}');
+            productDatabase = JSON.parse(localStorage.getItem('univ_db') || '{}');
+            updateUI();
             updateDbStatus();
         }
 
-        function clearInventory() {
-            if(confirm('يا أبو جواهر، متأكد بدك تصفر كل الجرد؟')) {
-                inventory = {};
-                saveToLocalStorage();
-                updateUI();
-                switchTab('scan');
-                showToast('تم التصفير');
-            }
-        }
+        function clearInventory() { if(confirm("متأكد بدك تصفر الجرد؟")) { inventory = {}; saveData(); updateUI(); } }
 
         async function fetchFromGoogleSheet(silent = false) {
             const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${Date.now()}`;
             try {
-                if(!silent) showToast('جاري السحب...');
                 Papa.parse(url, {
                     download: true,
                     header: false,
-                    complete: (res) => {
+                    complete: res => {
                         productDatabase = {};
-                        res.data.forEach((row, idx) => {
-                            if (row.length < 2) return;
-                            let b = row[0]?.toString().trim();
-                            let n = row[1]?.toString().trim();
-                            let p = row[2]?.toString().trim() || '0';
-                            if (idx === 0 && (b.includes('باركود') || n.includes('اسم'))) return;
-                            if (b) productDatabase[b] = { name: n || "صنف", price: p };
+                        res.data.forEach((r, i) => {
+                            if(i === 0 || r.length < 2) return;
+                            let b = r[0]?.toString().trim(), n = r[1]?.toString().trim(), p = r[2]?.toString().trim() || 0;
+                            if(b) productDatabase[b] = { name: n, price: p };
                         });
-                        saveToLocalStorage();
+                        saveData();
                         updateDbStatus();
-                        updateUI();
-                        if(!silent) showToast('تم التحديث بنجاح ✅');
+                        if(!silent) showToast("تحدثت البيانات!");
                     }
                 });
-            } catch (e) { if(!silent) alert('فشل الاتصال بالشيت!'); }
+            } catch(e) { if(!silent) alert("مشكلة بالإنترنت!"); }
         }
 
-        function updateDbStatus() {
-            document.getElementById('db-status').textContent = `المنتجات في الذاكرة: ${Object.keys(productDatabase).length}`;
-        }
+        function updateDbStatus() { document.getElementById('db-status').textContent = `المنتجات في الذاكرة: ${Object.keys(productDatabase).length}`; }
 
-        // --- PDF & Printing ---
         function generatePDF() {
-            const t = calculateTotals();
-            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
-            document.getElementById('pdf-count').textContent = t.posCount;
-            document.getElementById('pdf-pos').textContent = t.posSum;
-            document.getElementById('pdf-total-money').textContent = t.totalVal.toLocaleString() + " ₪";
-            document.getElementById('pdf-neg-money').textContent = t.extraProfit.toLocaleString() + " ₪";
-
-            const tbody = document.getElementById('pdf-table-body');
+            let tm = 0, nm = 0, c = 0;
+            const tbody = document.getElementById('pdf-tbody');
             tbody.innerHTML = '';
-            for (const b in inventory) {
+
+            Object.keys(inventory).forEach(b => {
                 const item = inventory[b];
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td dir="ltr">${b}</td>
-                    <td>${item.name}</td>
-                    <td dir="ltr">${item.price} ₪</td>
-                    <td dir="ltr" style="${item.qty < 0 ? 'color: red; font-weight: bold;' : ''}">${item.qty}</td>
-                `;
-                tbody.appendChild(tr);
-            }
+                const val = item.price * item.qty;
+                tm += val; if(item.qty < 0) nm += Math.abs(val);
+                c++;
+                tbody.innerHTML += `<tr><td>${b}</td><td>${item.name}</td><td>${item.price}</td><td style="${item.qty<0?'color:red;font-weight:bold':''}">${item.qty}</td></tr>`;
+            });
+
+            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG');
+            document.getElementById('pdf-c').textContent = c;
+            document.getElementById('pdf-m').textContent = tm.toLocaleString();
+            document.getElementById('pdf-nm').textContent = nm.toLocaleString();
             window.print();
         }
     </script>
