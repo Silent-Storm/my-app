@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>جرد يونيبرس - أبو جواهر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>يونيبرس جرد - أبو جواهر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,177 +12,299 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { dark: '#000000', turq: '#40E0D0', sky: '#87CEEB', gray: '#1f2937' }
+                        brand: { dark: '#000000', turq: '#40E0D0', sky: '#87CEEB', gray: '#1c1c1e' }
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(64, 224, 208, 0.4)',
+                        'glow-sky': '0 0 15px rgba(135, 206, 235, 0.4)'
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #000; color: #fff; overflow-x: hidden; }
-        .glass-panel { background: rgba(31, 41, 55, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(64, 224, 208, 0.2); }
-        .active-tab { border-bottom: 3px solid #40E0D0; color: #40E0D0; }
-        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        /* Base & iOS Strict Fixes */
+        html, body {
+            width: 100%;
+            height: 100dvh; /* Dynamic viewport height specifically for mobile browsers */
+            overflow: hidden; /* Prevent body scroll entirely */
+            background-color: #000;
+            color: #fff;
+            overscroll-behavior: none; /* Prevent iOS bounce effect */
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
         
-        /* Print Fixes for Zero Extra Pages */
-        #pdf-container { display: none; background: white; color: black; padding: 0; margin: 0; direction: rtl; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .glass { background: rgba(28, 28, 30, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(64, 224, 208, 0.15); }
+        
+        /* Hide Scrollbar for cleaner look */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .nav-btn { color: #6b7280; transition: all 0.3s; }
+        .nav-btn.active { color: #40E0D0; transform: translateY(-2px); }
+        .nav-btn.active i { text-shadow: 0 0 10px rgba(64, 224, 208, 0.5); }
+
+        /* Smooth tab transition */
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active-content { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Print Strict CSS - Forces 1 Page without breaking app state */
+        #pdf-container { display: none; direction: rtl; }
         @media print {
-            @page { margin: 0; size: auto; }
-            html, body { background: white !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+            html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
             body > *:not(#pdf-container) { display: none !important; }
-            #pdf-container { display: block !important; width: 100%; position: relative; padding: 10mm; box-sizing: border-box; }
-            .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 11px; color: black !important; }
-            .pdf-table th { background: #eee !important; -webkit-print-color-adjust: exact; }
+            #pdf-container { 
+                display: block !important; 
+                width: 100% !important; 
+                margin: 0 !important; 
+                padding: 10mm !important; 
+                box-sizing: border-box !important; 
+            }
+            .pdf-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+            .pdf-header h1 { margin: 0; font-size: 20px; font-weight: bold; }
+            .pdf-header p { margin: 5px 0 0 0; font-size: 11px; color: #333; }
+            .pdf-stats { display: flex; border: 1px solid #000; margin-bottom: 15px; background: #f8f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pdf-stat-item { flex: 1; text-align: center; padding: 8px 5px; border-left: 1px solid #ccc; }
+            .pdf-stat-item:last-child { border-left: none; }
+            .pdf-stat-item span { display: block; font-size: 9px; color: #555; margin-bottom: 3px; }
+            .pdf-stat-item b { font-size: 13px; }
+            .pdf-table { width: 100%; border-collapse: collapse; }
+            .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 11px; }
+            .pdf-table th { background: #e9ecef !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pdf-footer { margin-top: 15px; font-size: 9px; color: #666; text-align: center; border-top: 1px dashed #ccc; padding-top: 5px; }
+            @page { margin: 5mm; size: auto; }
         }
     </style>
 </head>
-<body class="min-h-screen pb-24">
+<body class="flex flex-col">
 
-    <!-- Header -->
-    <header class="bg-brand-dark border-b border-brand-turq p-4 sticky top-0 z-50 shadow-md">
-        <div class="flex justify-between items-center max-w-lg mx-auto">
-            <div>
-                <h1 class="text-lg font-bold text-brand-sky">يونيبرس - موديعين</h1>
-                <p class="text-[10px] text-brand-turq">بإشراف أبو جواهر 0546588897</p>
+    <!-- Top Header (Fixed at top, cannot move) -->
+    <header class="glass flex-shrink-0 z-50 border-b border-brand-turq/30 pt-[env(safe-area-inset-top)]">
+        <div class="flex justify-between items-center max-w-lg mx-auto w-full p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-turq w-10 h-10 rounded-xl flex items-center justify-center text-black font-black text-xl shadow-glow flex-shrink-0">U</div>
+                <div class="min-w-0">
+                    <h1 class="text-lg font-bold text-brand-sky leading-none truncate">يونيبرس - موديعين</h1>
+                    <p class="text-[10px] text-brand-turq mt-1 tracking-wider truncate">أبو جواهر | 0546588897</p>
+                </div>
             </div>
-            <i class="fa-solid fa-warehouse text-brand-turq text-xl"></i>
+            <div class="text-brand-turq text-center flex-shrink-0 ml-2">
+                <i class="fa-solid fa-clipboard-check text-xl mb-1"></i>
+            </div>
         </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="flex justify-around max-w-lg mx-auto bg-brand-dark/90 sticky top-[65px] z-40 border-b border-gray-800">
-        <button onclick="switchTab('scan')" id="tab-scan" class="flex-1 py-3 text-center text-xs active-tab"><i class="fa-solid fa-plus-circle mb-1 block"></i>جرد</button>
-        <button onclick="switchTab('list')" id="tab-list" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-clipboard-list mb-1 block"></i>المعدود</button>
-        <button onclick="switchTab('missing')" id="tab-missing" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-eye-slash mb-1 block"></i>المنسي</button>
-        <button onclick="switchTab('settings')" id="tab-settings" class="flex-1 py-3 text-center text-xs text-gray-400"><i class="fa-solid fa-cog mb-1 block"></i>ضبط</button>
-    </nav>
-
-    <main class="max-w-lg mx-auto p-4">
+    <!-- Main Content Area (The ONLY scrollable part) -->
+    <main class="flex-1 w-full max-w-lg mx-auto overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 pb-8">
         
-        <!-- Tab: Scan/Add -->
-        <section id="section-scan" class="block space-y-4">
-            <div class="grid grid-cols-2 gap-2">
-                <div class="glass-panel p-3 rounded-xl text-center">
-                    <span class="text-[10px] text-gray-400 block">إجمالي القيمة</span>
-                    <span id="stat-money" class="text-lg font-bold text-brand-sky">0 ₪</span>
+        <!-- ================= TAB 1: SCAN/ADD ================= -->
+        <section id="section-scan" class="tab-content active-content space-y-5">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-4 rounded-2xl text-center border-t-2 border-brand-sky relative overflow-hidden">
+                    <div class="absolute -top-4 -right-4 w-12 h-12 bg-brand-sky/20 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="text-[10px] text-gray-400 block mb-1">القيمة (نت) بالشيكل</span>
+                    <span id="stat-money" class="text-xl font-black text-brand-sky tracking-wider truncate block">0</span>
                 </div>
-                <div class="glass-panel p-3 rounded-xl text-center">
-                    <span class="text-[10px] text-gray-400 block">ربح المرتجع</span>
-                    <span id="stat-neg-money" class="text-lg font-bold text-red-400">0 ₪</span>
+                <div class="glass p-4 rounded-2xl text-center border-t-2 border-red-500 relative overflow-hidden">
+                    <div class="absolute -top-4 -left-4 w-12 h-12 bg-red-500/20 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="text-[10px] text-gray-400 block mb-1">الربح الإضافي (سالب)</span>
+                    <span id="stat-neg-money" class="text-xl font-black text-red-400 tracking-wider truncate block">0</span>
                 </div>
             </div>
 
-            <div class="glass-panel p-5 rounded-2xl">
-                <form onsubmit="handleAddItem(event)" class="space-y-4">
+            <!-- Input Form -->
+            <div class="glass p-5 sm:p-6 rounded-3xl shadow-lg relative overflow-hidden">
+                <form onsubmit="handleAddItem(event)" class="space-y-5 relative z-10">
                     <div>
-                        <label class="text-xs text-brand-turq">الباركود</label>
-                        <input type="text" id="barcode-input" inputmode="numeric" class="w-full bg-black border border-gray-700 rounded-lg p-3 mt-1 text-white focus:border-brand-turq outline-none" placeholder="اضرب الباركود..." required autofocus>
-                        <div id="product-name-hint" class="text-[11px] mt-2 h-4 text-brand-sky italic"></div>
+                        <label class="text-xs text-brand-turq font-bold flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-barcode"></i> باركود الصنف
+                        </label>
+                        <input type="text" id="barcode-input" inputmode="numeric" autocomplete="off" class="w-full bg-brand-gray border-2 border-gray-700 focus:border-brand-turq rounded-2xl py-3 px-4 text-white text-xl font-mono tracking-widest outline-none transition-colors" placeholder="امسح الباركود هان..." required autofocus>
+                        <div id="product-name-hint" class="text-xs mt-2 h-5 font-medium px-1 truncate w-full"></div>
                     </div>
+
                     <div>
-                        <label class="text-xs text-brand-turq">الكمية (سالب للربح)</label>
-                        <div class="flex gap-2">
-                            <button type="button" onclick="adjustQty(-1)" class="w-12 bg-gray-800 rounded-lg text-xl">-</button>
-                            <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-black border border-gray-700 rounded-lg p-3 text-center text-xl outline-none">
-                            <button type="button" onclick="adjustQty(1)" class="w-12 bg-brand-turq text-black rounded-lg text-xl font-bold">+</button>
+                        <label class="text-xs text-brand-turq font-bold flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-cubes"></i> الكمية (سالب = ربح/مرتجع)
+                        </label>
+                        <div class="flex gap-2 sm:gap-3">
+                            <button type="button" onclick="adjustQty(-1)" class="w-14 h-14 bg-gray-800 rounded-2xl text-2xl font-bold flex items-center justify-center hover:bg-gray-700 active:scale-95 transition-all flex-shrink-0">-</button>
+                            <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-brand-gray border-2 border-gray-700 focus:border-brand-turq rounded-2xl p-2 text-center text-2xl font-black text-white outline-none min-w-0">
+                            <button type="button" onclick="adjustQty(1)" class="w-14 h-14 bg-brand-turq text-black rounded-2xl text-2xl font-bold flex items-center justify-center hover:bg-brand-sky shadow-glow active:scale-95 transition-all flex-shrink-0">+</button>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-brand-sky text-black font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">
-                        إضافة للجرد
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-brand-turq to-brand-sky text-black font-black py-4 rounded-2xl shadow-glow-sky active:scale-95 transition-transform text-lg flex items-center justify-center gap-3 mt-2">
+                        <i class="fa-solid fa-plus"></i> إضافة للجرد
                     </button>
                 </form>
             </div>
         </section>
 
-        <!-- Tab: List -->
-        <section id="section-list" class="hidden space-y-3">
+        <!-- ================= TAB 2: INVENTORY LIST ================= -->
+        <section id="section-list" class="tab-content space-y-4">
             <div class="flex justify-between items-center px-1">
-                <h2 class="text-sm font-bold">الأصناف المعدودة (<span id="item-count">0</span>)</h2>
-                <button onclick="generatePDF()" class="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-lg"><i class="fa-solid fa-print"></i> طباعة PDF</button>
+                <h2 class="font-bold text-brand-sky text-base">المعدود (<span id="item-count">0</span>)</h2>
+                <button onclick="generatePDF()" class="bg-white text-black text-xs font-black px-4 py-2 rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all flex-shrink-0">
+                    <i class="fa-solid fa-print text-base"></i> طباعة التقرير
+                </button>
             </div>
-            <div id="inventory-list" class="space-y-2"></div>
-            <div id="list-empty" class="text-center py-10 text-gray-600 hidden">ما عديت إشي لسا!</div>
+            <div id="inventory-list" class="space-y-3 pb-2"></div>
+            <div id="list-empty" class="text-center py-16 text-gray-500 space-y-4 hidden">
+                <i class="fa-solid fa-box-open text-6xl block opacity-50"></i>
+                <p class="font-medium text-sm">المخزن فاضي يا معلمي، بلش جرد!</p>
+            </div>
         </section>
 
-        <!-- Tab: Missing Products (المنسي) -->
-        <section id="section-missing" class="hidden space-y-3">
+        <!-- ================= TAB 3: MISSING (المنسي) ================= -->
+        <section id="section-missing" class="tab-content space-y-4">
             <div class="px-1">
-                <h2 class="text-sm font-bold text-red-400 underline">أصناف موجودة بالشيت ولم تُعد (<span id="missing-count">0</span>)</h2>
-                <p class="text-[10px] text-gray-500 mt-1">هاي المنتجات مسجلة في جوجل بس إنت لسا ما جردتها بالمخزن.</p>
+                <h2 class="font-bold text-red-400 text-base flex items-center gap-2"><i class="fa-solid fa-bell"></i> أصناف منسية (<span id="missing-count">0</span>)</h2>
+                <p class="text-[10px] text-gray-400 mt-1 leading-relaxed">أصناف موجودة بجوجل شيت بس إنت لسا ما عديتها اليوم.</p>
             </div>
-            <div id="missing-list" class="space-y-2"></div>
+            <div id="missing-list" class="space-y-3 pb-2"></div>
         </section>
 
-        <!-- Tab: Settings -->
-        <section id="section-settings" class="hidden space-y-4">
-            <div class="glass-panel p-5 rounded-2xl">
-                <h3 class="text-brand-turq font-bold mb-2">مزامنة البيانات</h3>
-                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-bold py-3 rounded-lg"><i class="fa-solid fa-sync"></i> تحديث من جوجل شيت</button>
-                <p id="db-status" class="text-[10px] text-center mt-3 text-gray-400">المنتجات: 0</p>
+        <!-- ================= TAB 4: SETTINGS ================= -->
+        <section id="section-settings" class="tab-content space-y-6">
+            <div class="glass p-5 rounded-3xl border border-brand-turq/20 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-brand-turq/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h3 class="text-brand-turq font-bold mb-3 text-base flex items-center gap-2 relative z-10"><i class="fa-solid fa-cloud-sync"></i> مزامنة البيانات</h3>
+                <p class="text-xs text-gray-400 mb-4 leading-relaxed relative z-10">اسحب أحدث الأسماء والأسعار من ملف جوجل شيت تبعك لتكون دايماً عالأكيد.</p>
+                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-black py-4 rounded-xl shadow-glow active:scale-95 transition-all flex justify-center items-center gap-2 relative z-10">
+                    <i class="fa-solid fa-rotate-right"></i> تحديث الآن
+                </button>
+                <p id="db-status" class="text-[11px] text-center mt-4 text-gray-400 font-mono bg-black/50 py-2 rounded-lg relative z-10">الأصناف المحفوظة: 0</p>
             </div>
-            <button onclick="clearInventory()" class="w-full border border-red-900 text-red-500 py-3 rounded-lg text-sm">تصفير الجرد بالكامل</button>
+            
+            <div class="glass p-5 rounded-3xl border border-red-500/30">
+                <h3 class="text-red-400 font-bold mb-3 text-base flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> تصفير النظام</h3>
+                <p class="text-xs text-gray-400 mb-4">امسح كل الجرد الحالي وابدأ من الصفر (الأسماء بتضل محفوظة بالذاكرة).</p>
+                <button onclick="clearInventory()" class="w-full bg-red-900/40 border border-red-500 text-red-400 font-bold py-4 rounded-xl active:bg-red-500 active:text-white transition-all flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-trash-can"></i> مسح الجرد بالكامل
+                </button>
+            </div>
         </section>
 
     </main>
 
-    <!-- PDF Template -->
+    <!-- Bottom Navigation Bar (Fixed at bottom, respects iPhone Home Indicator) -->
+    <nav class="glass flex-shrink-0 z-50 border-t border-gray-800 pb-[env(safe-area-inset-bottom)]">
+        <div class="flex justify-around max-w-lg mx-auto w-full px-1 py-2">
+            <button onclick="switchTab('scan')" id="tab-scan" class="nav-btn active flex flex-col items-center gap-1.5 flex-1 pt-1">
+                <i class="fa-solid fa-barcode text-xl"></i>
+                <span class="text-[10px] font-bold">الجرد</span>
+            </button>
+            <button onclick="switchTab('list')" id="tab-list" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1">
+                <i class="fa-solid fa-clipboard-list text-xl"></i>
+                <span class="text-[10px] font-bold">المعدود</span>
+            </button>
+            <button onclick="switchTab('missing')" id="tab-missing" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1 relative">
+                <i class="fa-solid fa-eye-slash text-xl"></i>
+                <span class="text-[10px] font-bold">المنسي</span>
+                <span id="missing-badge" class="absolute top-0 right-[20%] w-2.5 h-2.5 bg-red-500 rounded-full border border-black hidden"></span>
+            </button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1">
+                <i class="fa-solid fa-gear text-xl"></i>
+                <span class="text-[10px] font-bold">ضبط</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Premium Toast Notification (Centered near bottom to avoid header collision) -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 w-11/12 max-w-xs bg-brand-dark border border-brand-turq text-white px-5 py-3 rounded-2xl font-bold shadow-glow text-sm opacity-0 transition-all duration-300 z-[100] pointer-events-none flex items-center justify-center gap-2 transform translate-y-4">
+        <i class="fa-solid fa-circle-check text-brand-turq"></i> <span id="toast-msg" class="truncate">تمت الإضافة</span>
+    </div>
+
+    <!-- Flawless PDF Template -->
     <div id="pdf-container">
-        <h1 style="text-align: center; margin: 0; font-size: 16px;">يونيبرس - تقرير الجرد</h1>
-        <p style="text-align: center; font-size: 9px; margin: 5px 0 10px 0;">المخزنجي: أبو جواهر | التاريخ: <span id="pdf-date"></span></p>
+        <div class="pdf-header">
+            <h1>يونيبرس (יוניבירס) - تقرير الجرد</h1>
+            <p>إشراف: أبو جواهر | فرع: موديعين | التاريخ: <span id="pdf-date"></span></p>
+        </div>
         
-        <div style="display: flex; justify-content: space-between; border: 1px solid #000; padding: 8px; margin-bottom: 8px; background: #f9f9f9; font-size: 10px;">
-            <div style="text-align: center">أصناف: <b id="pdf-c">0</b></div>
-            <div style="text-align: center">إجمالي ₪: <b id="pdf-m">0</b></div>
-            <div style="text-align: center">ربح ₪: <b id="pdf-nm" style="color:red">0</b></div>
+        <div class="pdf-stats">
+            <div class="pdf-stat-item">
+                <span>أصناف معدودة</span>
+                <b id="pdf-c">0</b>
+            </div>
+            <div class="pdf-stat-item">
+                <span>مجموع الكمية (+)</span>
+                <b id="pdf-q">0</b>
+            </div>
+            <div class="pdf-stat-item">
+                <span>القيمة الصافية</span>
+                <b id="pdf-m">0 ₪</b>
+            </div>
+            <div class="pdf-stat-item">
+                <span>الربح الإضافي (-)</span>
+                <b id="pdf-nm" style="color:red">0 ₪</b>
+            </div>
         </div>
 
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th>باركود</th>
-                    <th>اسم المنتج</th>
-                    <th>سعر</th>
-                    <th>كمية</th>
+                    <th style="width: 25%;">الباركود</th>
+                    <th style="width: 45%;">اسم الصنف</th>
+                    <th style="width: 15%;">السعر</th>
+                    <th style="width: 15%;">الكمية</th>
                 </tr>
             </thead>
             <tbody id="pdf-tbody"></tbody>
         </table>
+        
+        <div class="pdf-footer">
+            تم استخراج التقرير آلياً بواسطة نظام إدارة المخازن الخاص بأبو جواهر.
+        </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-brand-turq text-black px-6 py-2 rounded-full font-bold opacity-0 transition-opacity z-50"></div>
-
     <script>
+        // --- Core Data ---
         let productDatabase = {}; 
         let inventory = {}; 
         const sheetId = '1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc';
 
+        // --- Initialization ---
         window.onload = () => {
             loadData();
-            fetchFromGoogleSheet(true);
+            fetchFromGoogleSheet(true); // Silent update on load
+            
+            // Auto-search logic
             document.getElementById('barcode-input').addEventListener('input', e => {
                 const b = e.target.value.trim();
                 const h = document.getElementById('product-name-hint');
                 if(productDatabase[b]) {
-                    h.textContent = `${productDatabase[b].name} (₪${productDatabase[b].price})`;
+                    h.innerHTML = `<i class="fa-solid fa-check text-brand-turq"></i> ${productDatabase[b].name} <span class="text-brand-sky ml-1">(${productDatabase[b].price}₪)</span>`;
+                    h.className = "text-xs mt-2 h-5 text-gray-300 px-1 truncate w-full block";
                 } else {
-                    h.textContent = b ? "صنف جديد.." : "";
+                    h.innerHTML = b ? `<i class="fa-solid fa-circle-info"></i> صنف مش مسجل بالشيت` : "";
+                    h.className = "text-xs mt-2 h-5 text-red-400 px-1 truncate w-full block";
                 }
             });
         };
 
+        // --- Navigation Logic ---
         function switchTab(t) {
             ['scan', 'list', 'missing', 'settings'].forEach(s => {
-                document.getElementById(`section-${s}`).classList.add('hidden');
-                document.getElementById(`tab-${s}`).classList.remove('active-tab', 'text-brand-turq');
+                document.getElementById(`section-${s}`).classList.remove('active-content');
+                document.getElementById(`tab-${s}`).classList.remove('active');
             });
-            document.getElementById(`section-${t}`).classList.remove('hidden');
-            document.getElementById(`tab-${t}`).classList.add('active-tab', 'text-brand-turq');
+            
+            document.getElementById(`section-${t}`).classList.add('active-content');
+            document.getElementById(`tab-${t}`).classList.add('active');
+            
             if(t === 'missing') updateMissingList();
-            if(t === 'scan') document.getElementById('barcode-input').focus();
+            if(t === 'scan') {
+                const input = document.getElementById('barcode-input');
+                setTimeout(() => input.focus(), 100);
+            }
         }
 
+        // --- Business Logic ---
         function handleAddItem(e) {
             e.preventDefault();
             const bEl = document.getElementById('barcode-input');
@@ -190,13 +312,16 @@
             const b = bEl.value.trim();
             const q = parseFloat(qEl.value) || 0;
 
-            if(!b || q === 0) return;
+            if(!b || q === 0) {
+                showToast("دخل باركود وكمية صح يا كبير!", true);
+                return;
+            }
 
             if(!inventory[b]) {
                 inventory[b] = { 
                     qty: q, 
-                    name: productDatabase[b]?.name || "صنف غير معروف", 
-                    price: productDatabase[b]?.price || 0 
+                    name: productDatabase[b]?.name || "صنف يدوي (بدون اسم)", 
+                    price: parseFloat(productDatabase[b]?.price) || 0 
                 };
             } else {
                 inventory[b].qty += q;
@@ -204,46 +329,59 @@
 
             saveData();
             updateUI();
-            bEl.value = ''; qEl.value = '1';
-            document.getElementById('product-name-hint').textContent = '';
+            
+            // Reset form
+            bEl.value = ''; 
+            qEl.value = '1';
+            document.getElementById('product-name-hint').innerHTML = '';
+            
             bEl.focus();
-            if(navigator.vibrate) navigator.vibrate(40);
-            showToast("انضاف بنجاح!");
+            if(navigator.vibrate) navigator.vibrate([40, 30, 40]);
+            showToast("انحفظت مية المية 👍");
         }
 
         function updateUI() {
-            let totalMoney = 0;
-            let negMoney = 0;
-            let count = 0;
+            let totalVal = 0, negVal = 0, count = 0;
             const list = document.getElementById('inventory-list');
             list.innerHTML = '';
 
-            Object.keys(inventory).reverse().forEach(b => {
+            const sortedKeys = Object.keys(inventory).reverse();
+            sortedKeys.forEach(b => {
                 const item = inventory[b];
                 const lineVal = item.price * item.qty;
-                totalMoney += lineVal;
-                if(item.qty < 0) negMoney += Math.abs(lineVal);
+                
+                totalVal += lineVal; 
+                if(item.qty < 0) negVal += Math.abs(lineVal);
                 count++;
 
                 const div = document.createElement('div');
-                div.className = "glass-panel p-3 rounded-xl flex justify-between items-center";
+                div.className = `glass p-3 sm:p-4 rounded-2xl flex justify-between items-center border-r-4 ${item.qty < 0 ? 'border-red-500' : 'border-brand-turq'} mb-3`;
                 div.innerHTML = `
-                    <div>
-                        <div class="text-xs font-bold">${item.name} ${item.qty < 0 ? '🔴':''}</div>
-                        <div class="text-[9px] text-brand-sky">${b} | ₪${item.price}</div>
+                    <div class="flex-1 min-w-0 pr-1">
+                        <div class="text-sm font-bold text-white flex items-center gap-2 truncate">
+                            <span class="truncate">${item.name}</span>
+                            ${item.qty < 0 ? '<span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">ربح</span>' : ''}
+                        </div>
+                        <div class="text-[10px] text-gray-400 mt-1 font-mono truncate">${b} <span class="mx-1">|</span> <span class="text-brand-sky">₪${item.price}</span></div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span class="font-bold ${item.qty < 0 ? 'text-red-400':'text-brand-turq'}">${item.qty}</span>
-                        <button onclick="deleteItem('${b}')" class="text-gray-500"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="flex items-center gap-3 sm:gap-4 pl-1 flex-shrink-0">
+                        <span class="text-lg sm:text-xl font-black ${item.qty < 0 ? 'text-red-400':'text-brand-turq'}" dir="ltr">${item.qty}</span>
+                        <button onclick="deleteItem('${b}')" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:bg-red-900/50 hover:text-red-500 flex items-center justify-center transition-all flex-shrink-0">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
                     </div>
                 `;
                 list.appendChild(div);
             });
 
-            document.getElementById('stat-money').textContent = totalMoney.toLocaleString() + " ₪";
-            document.getElementById('stat-neg-money').textContent = negMoney.toLocaleString() + " ₪";
+            document.getElementById('stat-money').textContent = totalVal.toLocaleString();
+            document.getElementById('stat-neg-money').textContent = negVal.toLocaleString();
             document.getElementById('item-count').textContent = count;
             document.getElementById('list-empty').classList.toggle('hidden', count > 0);
+            
+            // Update Missing Badge
+            const missingLen = Object.keys(productDatabase).filter(k => !inventory[k]).length;
+            document.getElementById('missing-badge').classList.toggle('hidden', missingLen === 0);
         }
 
         function updateMissingList() {
@@ -255,94 +393,175 @@
                 if(!inventory[b]) {
                     mCount++;
                     const div = document.createElement('div');
-                    div.className = "glass-panel p-3 rounded-xl opacity-70 border-l-4 border-red-500";
+                    div.className = "glass p-3 sm:p-4 rounded-2xl border-l-4 border-red-500/30 flex justify-between items-center mb-2";
                     div.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <div class="text-xs">${productDatabase[b].name}</div>
-                                <div class="text-[9px] text-gray-400">${b}</div>
-                            </div>
-                            <button onclick="setScan('${b}')" class="text-[10px] bg-brand-sky text-black px-2 py-1 rounded">عده هان</button>
+                        <div class="flex-1 min-w-0 pr-2">
+                            <div class="text-xs font-bold text-gray-300 truncate">${productDatabase[b].name}</div>
+                            <div class="text-[10px] text-gray-500 font-mono mt-1 truncate">${b}</div>
                         </div>
+                        <button onclick="setScan('${b}')" class="bg-brand-turq/20 border border-brand-turq text-brand-turq text-[10px] font-bold px-3 py-2 rounded-lg active:bg-brand-turq active:text-black transition-colors flex-shrink-0">
+                            عده هان
+                        </button>
                     `;
                     list.appendChild(div);
                 }
             });
             document.getElementById('missing-count').textContent = mCount;
-            if(mCount === 0) list.innerHTML = '<div class="text-center text-xs text-green-400 py-10">مبروك! عديت كل الأصناف اللي بالشيت.</div>';
+            if(mCount === 0) list.innerHTML = `
+                <div class="text-center py-16 text-brand-turq space-y-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-turq/20">
+                        <i class="fa-solid fa-check-double text-3xl"></i>
+                    </div>
+                    <p class="font-bold text-sm">وحش يا أبو جواهر!<br>عديت كل المكتوب بالشيت.</p>
+                </div>`;
         }
 
         function setScan(b) {
             switchTab('scan');
-            document.getElementById('barcode-input').value = b;
-            document.getElementById('barcode-input').dispatchEvent(new Event('input'));
+            const input = document.getElementById('barcode-input');
+            input.value = b;
+            input.dispatchEvent(new Event('input')); // trigger lookup
         }
 
-        function deleteItem(b) { if(confirm("بدك تمسحه؟")) { delete inventory[b]; saveData(); updateUI(); } }
-
-        function adjustQty(n) { document.getElementById('qty-input').value = (parseFloat(document.getElementById('qty-input').value)||0) + n; }
-
-        function showToast(m) {
-            const t = document.getElementById('toast');
-            t.textContent = m; t.classList.remove('opacity-0');
-            setTimeout(() => t.classList.add('opacity-0'), 2000);
+        function deleteItem(b) { 
+            if(confirm("بدك تمسح هاد الصنف من الجرد؟")) { 
+                delete inventory[b]; 
+                saveData(); 
+                updateUI(); 
+            } 
         }
 
+        function adjustQty(n) { 
+            const el = document.getElementById('qty-input');
+            el.value = (parseFloat(el.value)||0) + n; 
+        }
+
+        // --- Storage ---
         function saveData() {
-            localStorage.setItem('univ_inv', JSON.stringify(inventory));
-            localStorage.setItem('univ_db', JSON.stringify(productDatabase));
+            localStorage.setItem('univ_inv_v3', JSON.stringify(inventory));
+            localStorage.setItem('univ_db_v3', JSON.stringify(productDatabase));
         }
 
         function loadData() {
-            inventory = JSON.parse(localStorage.getItem('univ_inv') || '{}');
-            productDatabase = JSON.parse(localStorage.getItem('univ_db') || '{}');
+            inventory = JSON.parse(localStorage.getItem('univ_inv_v3') || '{}');
+            productDatabase = JSON.parse(localStorage.getItem('univ_db_v3') || '{}');
             updateUI();
             updateDbStatus();
         }
 
-        function clearInventory() { if(confirm("متأكد بدك تصفر الجرد؟")) { inventory = {}; saveData(); updateUI(); } }
+        function clearInventory() { 
+            if(confirm("يا معلمي، هاد الزر بمسح كل شغلك لليوم! متأكد؟")) { 
+                inventory = {}; 
+                saveData(); 
+                updateUI(); 
+                switchTab('scan'); 
+            } 
+        }
 
+        // --- Network ---
         async function fetchFromGoogleSheet(silent = false) {
             const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${Date.now()}`;
             try {
+                if(!silent) {
+                    document.getElementById('db-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-turq"></i> جاري السحب...';
+                }
                 Papa.parse(url, {
                     download: true,
                     header: false,
                     complete: res => {
                         productDatabase = {};
                         res.data.forEach((r, i) => {
-                            if(i === 0 || r.length < 2) return;
-                            let b = r[0]?.toString().trim(), n = r[1]?.toString().trim(), p = r[2]?.toString().trim() || 0;
+                            if(r.length < 2) return; 
+                            let b = r[0]?.toString().trim();
+                            let n = r[1]?.toString().trim();
+                            let p = r[2]?.toString().trim() || 0;
+                            
+                            if(i === 0 && (b.includes('باركود') || n.includes('اسم'))) return;
+                            
                             if(b) productDatabase[b] = { name: n, price: p };
                         });
                         saveData();
                         updateDbStatus();
-                        if(!silent) showToast("تحدثت البيانات!");
+                        updateUI(); 
+                        if(!silent) showToast("تم تحديث الداتا بنجاح ✅");
+                    },
+                    error: err => {
+                        if(!silent) {
+                            alert("مشكلة في الاتصال، تأكد إنك شابك نت.");
+                            updateDbStatus();
+                        }
                     }
                 });
-            } catch(e) { if(!silent) alert("مشكلة بالإنترنت!"); }
+            } catch(e) { 
+                if(!silent) {
+                    alert("مشكلة في سحب البيانات.");
+                    updateDbStatus();
+                }
+            }
         }
 
-        function updateDbStatus() { document.getElementById('db-status').textContent = `المنتجات في الذاكرة: ${Object.keys(productDatabase).length}`; }
+        function updateDbStatus() { 
+            document.getElementById('db-status').textContent = `الأصناف المحفوظة بالذاكرة: ${Object.keys(productDatabase).length}`; 
+        }
 
+        // --- Print/PDF ---
         function generatePDF() {
-            let tm = 0, nm = 0, c = 0;
+            let totalVal = 0, negVal = 0, posQty = 0, posCount = 0;
             const tbody = document.getElementById('pdf-tbody');
             tbody.innerHTML = '';
 
             Object.keys(inventory).forEach(b => {
                 const item = inventory[b];
                 const val = item.price * item.qty;
-                tm += val; if(item.qty < 0) nm += Math.abs(val);
-                c++;
-                tbody.innerHTML += `<tr><td>${b}</td><td>${item.name}</td><td>${item.price}</td><td style="${item.qty<0?'color:red;font-weight:bold':''}">${item.qty}</td></tr>`;
+                totalVal += val;
+                
+                if(item.qty > 0) {
+                    posQty += item.qty;
+                    posCount++;
+                } else {
+                    negVal += Math.abs(val);
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-family: monospace;">${b}</td>
+                        <td style="font-weight: bold;">${item.name}</td>
+                        <td>${item.price} ₪</td>
+                        <td style="${item.qty < 0 ? 'color:red; font-weight:bold;' : ''}">${item.qty}</td>
+                    </tr>`;
             });
 
-            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG');
-            document.getElementById('pdf-c').textContent = c;
-            document.getElementById('pdf-m').textContent = tm.toLocaleString();
-            document.getElementById('pdf-nm').textContent = nm.toLocaleString();
+            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            document.getElementById('pdf-c').textContent = posCount;
+            document.getElementById('pdf-q').textContent = posQty;
+            document.getElementById('pdf-m').textContent = totalVal.toLocaleString() + " ₪";
+            document.getElementById('pdf-nm').textContent = negVal.toLocaleString() + " ₪";
+            
             window.print();
+        }
+
+        // --- UI Helpers ---
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            
+            if(isError) {
+                t.classList.add('border-red-500');
+                t.classList.remove('border-brand-turq');
+                t.querySelector('i').className = "fa-solid fa-triangle-exclamation text-red-500";
+            } else {
+                t.classList.add('border-brand-turq');
+                t.classList.remove('border-red-500');
+                t.querySelector('i').className = "fa-solid fa-circle-check text-brand-turq";
+            }
+
+            t.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            t.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => { 
+                t.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none'); 
+                t.classList.remove('opacity-100', 'translate-y-0'); 
+            }, 2500);
         }
     </script>
 </body>
