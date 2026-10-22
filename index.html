@@ -54,6 +54,7 @@ label{font-size:12px;font-weight:700;color:var(--t);display:block;margin-bottom:
 .step span{min-width:34px;text-align:center;font-weight:900;font-size:18px;color:var(--t)}
 .step span.n{color:var(--r)}
 .del{border:0;background:transparent;font-size:18px;cursor:pointer;opacity:.6}
+.sum{font-size:12px;color:var(--m);text-align:center;margin:-4px 0 12px}
 .empty{text-align:center;color:var(--m);padding:50px 10px;font-size:14px;line-height:1.8}
 nav{flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #222}
 .nv{max-width:520px;margin:auto;display:flex;padding:6px 4px}
@@ -105,6 +106,7 @@ body>*:not(#pdf){display:none!important}
       <div class="stat glass" style="border-top:2px solid var(--s)"><span>القيمة الصافية ₪</span><b id="st-m" style="color:var(--s)">0</b></div>
       <div class="stat glass" style="border-top:2px solid #ef4444"><span>الربح الإضافي (سالب) ₪</span><b id="st-n" style="color:var(--r)">0</b></div>
     </div>
+    <div class="sum" id="sumline"></div>
     <form class="card glass" id="f" autocomplete="off">
       <label>باركود الصنف</label>
       <div class="row2">
@@ -112,6 +114,7 @@ body>*:not(#pdf){display:none!important}
         <button type="button" class="sq" id="camBtn" style="display:none" aria-label="كاميرا">📷</button>
       </div>
       <div class="hint" id="hint"></div>
+      <div id="unk" class="row2" style="display:none;margin:-6px 0 14px"><input class="in" id="un" placeholder="اسم الصنف (اختياري)" style="font-size:14px"><input class="in" id="up" type="number" step="any" inputmode="decimal" placeholder="السعر" style="font-size:14px;width:90px;flex:none"></div>
       <label>الكمية (سالب = ربح / مرتجع)</label>
       <div class="qrow">
         <button type="button" class="sq" data-q="-1">−</button>
@@ -133,7 +136,9 @@ body>*:not(#pdf){display:none!important}
       <button class="chip on" data-f="all">الكل</button>
       <button class="chip" data-f="neg">ربح (سالب)</button>
       <button class="chip" data-f="unk">غير مسجل</button>
+      <button class="chip" data-f="diff">فروقات</button>
     </div>
+    <div class="sum" id="dsum"></div>
     <div id="list"></div>
   </section>
 
@@ -149,7 +154,7 @@ body>*:not(#pdf){display:none!important}
   <section id="s-set">
     <div class="card glass">
       <label>مزامنة جوجل شيت</label>
-      <p style="font-size:12px;color:var(--m);margin:0 0 10px;line-height:1.7">الملف لازم يكون مشارك "أي شخص معه الرابط". الأعمدة: باركود، اسم، سعر.</p>
+      <p style="font-size:12px;color:var(--m);margin:0 0 10px;line-height:1.7">الملف لازم يكون مشارك "أي شخص معه الرابط". الأعمدة: باركود، اسم، سعر، وبشكل اختياري الكمية بالنظام لإظهار الفروقات.</p>
       <input class="in" id="sheet" placeholder="رابط الشيت أو المعرّف" style="font-size:13px;direction:ltr;margin-bottom:10px">
       <button class="btn" id="sync">تحديث الآن</button>
       <p id="dbs" style="font-size:11px;text-align:center;color:var(--m);margin:10px 0 0"></p>
@@ -157,12 +162,14 @@ body>*:not(#pdf){display:none!important}
     <div class="card glass">
       <div class="sw"><span>صوت عند الإضافة</span><input type="checkbox" id="snd"></div>
       <div class="sw"><span>اهتزاز عند الإضافة</span><input type="checkbox" id="vib"></div>
+      <div class="sw"><span>بعد الباركود انتقل للكمية</span><input type="checkbox" id="aq"></div>
     </div>
     <div class="card glass">
       <label>تصدير الجرد</label>
       <div class="row2">
         <button class="btn sec" id="csv">ملف Excel / CSV</button>
         <button class="btn sec" id="wa">واتساب</button>
+      </div><div class="row2" style="margin-top:8px"><button class="btn sec" id="bk">نسخة احتياطية</button><button class="btn sec" id="rs">استرجاع</button><input type="file" id="rf" accept=".json" hidden>
       </div>
     </div>
     <div class="card glass" style="border-color:rgba(239,68,68,.4)">
@@ -187,8 +194,8 @@ body>*:not(#pdf){display:none!important}
 <div id="pdf">
   <h1>يونيبرس (יוניבירס) - تقرير الجرد</h1>
   <p>إشراف: أبو جواهر | فرع: موديعين | <span id="pd"></span></p>
-  <div class="ps"><div>أصناف معدودة<b id="p1">0</b></div><div>مجموع الكمية (+)<b id="p2">0</b></div><div>القيمة الصافية<b id="p3">0</b></div><div>الربح الإضافي (-)<b id="p4">0</b></div></div>
-  <table><thead><tr><th style="width:25%">الباركود</th><th>اسم الصنف</th><th style="width:12%">السعر</th><th style="width:12%">الكمية</th><th style="width:14%">المجموع</th></tr></thead><tbody id="pb"></tbody></table>
+  <div class="ps"><div>أصناف معدودة<b id="p1">0</b></div><div>مجموع الكمية (+)<b id="p2">0</b></div><div>القيمة الصافية<b id="p3">0</b></div><div>الربح الإضافي (-)<b id="p4">0</b></div><div>منسية<b id="p5">0</b></div></div>
+  <table><thead><tr><th style="width:21%">الباركود</th><th>اسم الصنف</th><th style="width:9%">السعر</th><th style="width:9%">الكمية</th><th style="width:9%">بالنظام</th><th style="width:9%">الفرق</th><th style="width:12%">المجموع</th></tr></thead><tbody id="pb"></tbody></table>
 </div>
 
 <script>
@@ -199,7 +206,7 @@ const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{toast('ال
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
 
 let db=ld('univ_db_v3',{}), inv=ld('univ_inv_v3',{});
-let cfg=Object.assign({sheet:'1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc',snd:true,vib:true},ld('univ_cfg_v1',{}));
+let cfg=Object.assign({sheet:'1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc',snd:true,vib:true,aq:false,last:0},ld('univ_cfg_v1',{}));
 let filter='all', undoFn=null, tmr;
 const saveInv=()=>sv('univ_inv_v3',inv), saveDb=()=>sv('univ_db_v3',db), saveCfg=()=>sv('univ_cfg_v1',cfg);
 
@@ -229,20 +236,21 @@ function beep(f=880){if(!cfg.snd)return;try{actx=actx||new(window.AudioContext||
 const buzz=p=>{if(cfg.vib&&navigator.vibrate)navigator.vibrate(p)};
 
 /* ---------- Core ---------- */
-function setQty(b,q,silent){
+function setQty(b,q,meta){
   const prev=inv[b]?{...inv[b]}:null;
-  if(!inv[b]){const d=db[b];inv[b]={qty:0,name:d?d.name:'صنف يدوي (بدون اسم)',price:d?d.price:0,known:!!d,t:Date.now()}}
+  if(!inv[b]){const d=db[b];inv[b]={qty:0,name:d?d.name:(meta&&meta.name)||'صنف يدوي (بدون اسم)',price:d?d.price:(meta&&meta.price)||0,known:!!d,t:Date.now()}}
   inv[b].qty=Math.round((inv[b].qty+q)*1000)/1000;inv[b].t=Date.now();
   if(inv[b].qty===0)delete inv[b];
   saveInv();render();
   return()=>{if(prev)inv[b]=prev;else delete inv[b];saveInv();render()};
 }
-$('f').onsubmit=e=>{
+$('f').onsubmit=async e=>{
   e.preventDefault();
   const b=$('bc').value.trim(),q=parseFloat($('qty').value)||0;
   if(!b||q===0){toast('دخل باركود وكمية صح',1);return}
-  const u=setQty(b,q),it=inv[b];
-  $('bc').value='';$('qty').value='1';$('hint').textContent='';$('bc').focus();
+  if(Math.abs(q)>=100&&!(await ask('الكمية '+q+' كبيرة، متأكد؟')))return;
+  const u=setQty(b,q,{name:$('un').value.trim(),price:parseFloat($('up').value)||0}),it=inv[b];
+  $('bc').value='';$('qty').value='1';$('hint').textContent='';$('un').value='';$('up').value='';$('unk').style.display='none';$('bc').focus();
   buzz([40,30,40]);beep(it&&it.known===false?330:880);
   const L=$('last');L.style.display='block';L.classList.remove('flash');void L.offsetWidth;L.classList.add('flash');
   L.innerHTML=it?`<b>${esc(it.name)}</b><div style="color:var(--m);font-size:12px;margin-top:4px">${esc(b)} — الكمية الآن: <span style="color:var(--t);font-weight:900">${it.qty}</span></div>`:'تم حذف الصنف (الكمية صفر)';
@@ -250,6 +258,7 @@ $('f').onsubmit=e=>{
 };
 $('bc').oninput=e=>{
   const b=e.target.value.trim(),h=$('hint');
+  $('unk').style.display=b&&!db[b]&&!inv[b]?'flex':'none';
   if(!b){h.textContent='';return}
   const d=db[b],c=inv[b];
   if(d){h.style.color='#d1d5db';h.innerHTML=`✔ ${esc(d.name)} <span style="color:var(--s)">(${d.price}₪)</span>${c?` <span style="color:var(--t)">• معدود: ${c.qty}</span>`:''}`}
@@ -262,25 +271,33 @@ function render(){
   let tot=0,neg=0,n=0,known=0;
   for(const b in inv){const i=inv[b],v=i.price*i.qty;tot+=v;if(i.qty<0)neg+=-v;n++;if(db[b])known++}
   $('st-m').textContent=fmt(tot);$('st-n').textContent=fmt(neg);
+  let units=0,short=0,sur=0,hs=false;
+  for(const b in inv){units+=inv[b].qty;const y=db[b]&&db[b].sys;if(y!=null){hs=true;const d=inv[b].qty-y;if(d<0)short-=d*inv[b].price;else sur+=d*inv[b].price}}
+  $('sumline').textContent=n?`${n} صنف • ${fmt(units)} وحدة`:'';
+  $('dsum').innerHTML=hs?`نقص <b style="color:var(--r)">${fmt(short)}₪</b> • زيادة <b style="color:var(--t)">${fmt(sur)}₪</b>`:'';
   const all=Object.keys(db).length;
   $('bar').style.width=(all?Math.min(100,known/all*100):0)+'%';
   const miss=Math.max(0,all-known);
   $('mb').textContent=miss>99?'99+':miss;$('mb').style.display=miss?'block':'none';
-  $('dbs').textContent=`الأصناف المحفوظة: ${all} • معدود منها: ${known}`;
+  $('dbs').textContent=`الأصناف المحفوظة: ${all} • معدود منها: ${known}`+(cfg.last?' • آخر تحديث '+new Date(cfg.last).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'');
   if($('s-list').classList.contains('on'))renderList();
   if($('s-missing').classList.contains('on'))renderMissing();
 }
+const sy=b=>db[b]&&db[b].sys!=null?db[b].sys:'';
+function dfx(b){const s=sy(b);if(s==='')return '';const d=Math.round((inv[b].qty-s)*1000)/1000;
+  return ` | نظام ${s} | <span style="color:${d<0?'var(--r)':d>0?'#fbbf24':'var(--t)'}">${d===0?'مطابق ✔':(d>0?'+':'')+d}</span>`}
 function renderList(){
   const q=$('q1').value.trim().toLowerCase();
   let keys=Object.keys(inv).sort((a,b)=>inv[b].t-inv[a].t);
   keys=keys.filter(b=>{const i=inv[b];
     if(filter==='neg'&&i.qty>=0)return false;
     if(filter==='unk'&&db[b])return false;
+    if(filter==='diff'&&!(db[b]&&db[b].sys!=null&&i.qty!==db[b].sys))return false;
     return !q||b.includes(q)||i.name.toLowerCase().includes(q)});
   $('list').innerHTML=keys.length?keys.map(b=>{const i=inv[b],neg=i.qty<0,unk=!db[b];
     return `<div class="item glass ${neg?'neg':unk?'unk':''}" data-b="${esc(b)}">
       <div class="nm"><b>${esc(i.name)}${neg?'<span class="tag">ربح</span>':''}${unk?'<span class="tag y">غير مسجل</span>':''}</b>
-      <small>${esc(b)} | ₪${i.price}</small></div>
+      <small>${esc(b)} | ₪${i.price}${dfx(b)}</small></div>
       <div class="step"><button data-a="-1">−</button><span class="${neg?'n':''}" data-a="e">${i.qty}</span><button data-a="1">+</button></div>
       <button class="del" data-a="d">🗑</button></div>`}).join('')
     :`<div class="empty">${Object.keys(inv).length?'ما في نتائج':'ما عديت شي لسا<br>بلّش جرد!'}</div>`;
@@ -290,7 +307,7 @@ function renderMissing(){
   const ks=Object.keys(db).filter(b=>!inv[b]&&(!q||b.includes(q)||db[b].name.toLowerCase().includes(q)));
   $('mc').textContent=Object.keys(db).filter(b=>!inv[b]).length;
   $('miss').innerHTML=ks.length?ks.slice(0,300).map(b=>`<div class="item glass" style="border-inline-start-color:rgba(239,68,68,.4)" data-b="${esc(b)}">
-    <div class="nm"><b>${esc(db[b].name)}</b><small>${esc(b)}</small></div>
+    <div class="nm"><b>${esc(db[b].name)}</b><small>${esc(b)}${db[b].sys!=null?' | نظام '+db[b].sys:''}</small></div>
     <button class="chip" data-a="go" style="color:var(--t);border-color:var(--t)">عده هان</button></div>`).join('')+(ks.length>300?`<div class="empty">+${ks.length-300} صنف، استخدم البحث</div>`:'')
     :`<div class="empty" style="color:var(--t)">✔ وحش يا أبو جواهر!<br>${Object.keys(db).length?'عديت كل المكتوب بالشيت.':'حدّث الشيت من الضبط.'}</div>`;
 }
@@ -327,9 +344,9 @@ async function sync(silent){
     parseCSV(await res.text()).forEach((r,i)=>{
       const b=(r[0]||'').trim(),n=(r[1]||'').trim(),p=parseFloat((r[2]||'').replace(/[^\d.\-]/g,''))||0;
       if(!b||(i===0&&/باركود|اسم|barcode|name/i.test(b+n)))return;
-      d[b]={name:n||'بدون اسم',price:p}});
+      const y=(r[3]||'').trim();d[b]={name:n||'بدون اسم',price:p,sys:y===''||isNaN(Number(y))?null:Number(y)}});
     if(!Object.keys(d).length)throw 0;
-    db=d;saveDb();
+    db=d;saveDb();cfg.last=Date.now();saveCfg();
     for(const b in inv)if(db[b]){inv[b].name=db[b].name;inv[b].price=db[b].price;inv[b].known=true}
     saveInv();render();if(!silent)toast('تم تحديث الداتا ✔');
   }catch{if(!silent)toast('فشل السحب: تأكد من النت ومشاركة الشيت',1)}
@@ -342,7 +359,7 @@ function rows(){return Object.keys(inv).map(b=>({b,...inv[b]}))}
 $('csv').onclick=()=>{
   const r=rows();if(!r.length){toast('ما في جرد للتصدير',1);return}
   const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-  const t='\uFEFF'+['باركود,الاسم,السعر,الكمية,المجموع',...r.map(i=>[q(i.b),q(i.name),i.price,i.qty,i.price*i.qty].join(','))].join('\n');
+  const t='\uFEFF'+['باركود,الاسم,السعر,الكمية,المجموع,بالنظام,الفرق',...r.map(i=>[q(i.b),q(i.name),i.price,i.qty,i.price*i.qty,sy(i.b),sy(i.b)===''?'':i.qty-sy(i.b)].join(','))].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));
   a.download='جرد-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 };
@@ -355,13 +372,26 @@ $('wa').onclick=()=>{
 $('print').onclick=()=>{
   let tot=0,neg=0,pq=0,pc=0;
   $('pb').innerHTML=rows().map(i=>{const v=i.price*i.qty;tot+=v;if(i.qty>0){pq+=i.qty;pc++}else neg+=-v;
-    return `<tr><td style="font-family:monospace">${esc(i.b)}</td><td><b>${esc(i.name)}</b></td><td>${i.price} ₪</td><td style="${i.qty<0?'color:red;font-weight:bold':''}">${i.qty}</td><td>${fmt(v)} ₪</td></tr>`}).join('');
+    return `<tr><td style="font-family:monospace">${esc(i.b)}</td><td><b>${esc(i.name)}</b></td><td>${i.price} ₪</td><td style="${i.qty<0?'color:red;font-weight:bold':''}">${i.qty}</td><td>${sy(i.b)===''?'-':sy(i.b)}</td><td>${sy(i.b)===''?'-':i.qty-sy(i.b)}</td><td>${fmt(v)} ₪</td></tr>`}).join('');
   $('pd').textContent=new Date().toLocaleString('ar-EG');
-  $('p1').textContent=pc;$('p2').textContent=fmt(pq);$('p3').textContent=fmt(tot)+' ₪';$('p4').textContent=fmt(neg)+' ₪';
+  $('p1').textContent=pc;$('p2').textContent=fmt(pq);$('p3').textContent=fmt(tot)+' ₪';$('p4').textContent=fmt(neg)+' ₪';$('p5').textContent=Object.keys(db).filter(b=>!inv[b]).length;
   window.print();
 };
 $('clr').onclick=async()=>{if(await ask('هاد الزر بمسح كل شغلك لليوم. متأكد؟')){const old=inv;inv={};saveInv();render();tab('scan');toast('تم التصفير',0,()=>{inv=old;saveInv();render()})}};
 $('snd').onchange=e=>{cfg.snd=e.target.checked;saveCfg()};$('vib').onchange=e=>{cfg.vib=e.target.checked;saveCfg()};
+
+/* ---------- Counting flow + backup ---------- */
+$('aq').onchange=e=>{cfg.aq=e.target.checked;saveCfg()};
+$('bc').onkeydown=e=>{if(e.key==='Enter'&&cfg.aq&&$('bc').value.trim()){e.preventDefault();$('qty').focus()}};
+$('qty').onfocus=e=>e.target.select();
+$('bk').onclick=()=>{if(!Object.keys(inv).length){toast('ما في جرد للحفظ',1);return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:1,inv})],{type:'application/json'}));
+  a.download='جرد-نسخة-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+$('rs').onclick=()=>$('rf').click();
+$('rf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());if(!d.inv||typeof d.inv!=='object')throw 0;
+    if(await ask('الاسترجاع بيستبدل الجرد الحالي. متأكد؟')){const old=inv;inv=d.inv;saveInv();render();toast('تم الاسترجاع',0,()=>{inv=old;saveInv();render()})}
+  }catch{toast('الملف مش صالح',1)}};
 
 /* ---------- Camera scan (where BarcodeDetector exists) ---------- */
 let stream,camT;
@@ -383,7 +413,7 @@ if('BarcodeDetector'in window&&navigator.mediaDevices){
 /* ---------- Network + init ---------- */
 function net(){const o=navigator.onLine;$('net').classList.toggle('off',!o);$('net').querySelector('span').textContent=o?'متصل':'بدون نت'}
 addEventListener('online',()=>{net();sync(true)});addEventListener('offline',net);
-$('sheet').value=cfg.sheet;$('snd').checked=cfg.snd;$('vib').checked=cfg.vib;
+$('sheet').value=cfg.sheet;$('snd').checked=cfg.snd;$('aq').checked=cfg.aq;$('vib').checked=cfg.vib;
 net();render();if(navigator.onLine)sync(true);
 </script>
 </body>
