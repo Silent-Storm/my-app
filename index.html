@@ -1,568 +1,390 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>يونيبرس جرد - أبو جواهر</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { dark: '#000000', turq: '#40E0D0', sky: '#87CEEB', gray: '#1c1c1e' }
-                    },
-                    boxShadow: {
-                        'glow': '0 0 15px rgba(64, 224, 208, 0.4)',
-                        'glow-sky': '0 0 15px rgba(135, 206, 235, 0.4)'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Base & iOS Strict Fixes */
-        html, body {
-            width: 100%;
-            height: 100dvh; /* Dynamic viewport height specifically for mobile browsers */
-            overflow: hidden; /* Prevent body scroll entirely */
-            background-color: #000;
-            color: #fff;
-            overscroll-behavior: none; /* Prevent iOS bounce effect */
-            -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        
-        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        .glass { background: rgba(28, 28, 30, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(64, 224, 208, 0.15); }
-        
-        /* Hide Scrollbar for cleaner look */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        .nav-btn { color: #6b7280; transition: all 0.3s; }
-        .nav-btn.active { color: #40E0D0; transform: translateY(-2px); }
-        .nav-btn.active i { text-shadow: 0 0 10px rgba(64, 224, 208, 0.5); }
-
-        /* Smooth tab transition */
-        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
-        .tab-content.active-content { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Print Strict CSS - Forces 1 Page without breaking app state */
-        #pdf-container { display: none; direction: rtl; }
-        @media print {
-            html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
-            body > *:not(#pdf-container) { display: none !important; }
-            #pdf-container { 
-                display: block !important; 
-                width: 100% !important; 
-                margin: 0 !important; 
-                padding: 10mm !important; 
-                box-sizing: border-box !important; 
-            }
-            .pdf-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
-            .pdf-header h1 { margin: 0; font-size: 20px; font-weight: bold; }
-            .pdf-header p { margin: 5px 0 0 0; font-size: 11px; color: #333; }
-            .pdf-stats { display: flex; border: 1px solid #000; margin-bottom: 15px; background: #f8f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .pdf-stat-item { flex: 1; text-align: center; padding: 8px 5px; border-left: 1px solid #ccc; }
-            .pdf-stat-item:last-child { border-left: none; }
-            .pdf-stat-item span { display: block; font-size: 9px; color: #555; margin-bottom: 3px; }
-            .pdf-stat-item b { font-size: 13px; }
-            .pdf-table { width: 100%; border-collapse: collapse; }
-            .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 11px; }
-            .pdf-table th { background: #e9ecef !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .pdf-footer { margin-top: 15px; font-size: 9px; color: #666; text-align: center; border-top: 1px dashed #ccc; padding-top: 5px; }
-            @page { margin: 5mm; size: auto; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>يونيبرس جرد - أبو جواهر</title>
+<style>
+:root{--t:#40E0D0;--s:#87CEEB;--g:#1c1c1e;--r:#f87171;--m:#9ca3af;--line:rgba(64,224,208,.18)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;overscroll-behavior:none;font-family:-apple-system,"Segoe UI",Tahoma,Roboto,Arial,sans-serif}
+body{display:flex;flex-direction:column;height:100dvh}
+button,input{font:inherit;color:inherit}
+.glass{background:rgba(28,28,30,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line)}
+header{flex-shrink:0;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line)}
+.hd{max-width:520px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;background:var(--t);color:#000;font-weight:900;font-size:20px;display:grid;place-items:center;box-shadow:0 0 15px rgba(64,224,208,.4)}
+.hd h1{font-size:17px;margin:0;color:var(--s)}.hd small{color:var(--t);font-size:11px}
+.dot{margin-inline-start:auto;font-size:11px;color:var(--m);display:flex;align-items:center;gap:6px}
+.dot i{width:8px;height:8px;border-radius:50%;background:#22c55e;display:block}.dot.off i{background:var(--r)}
+.prog{height:3px;background:#222}.prog b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--t),var(--s));transition:width .4s}
+main{flex:1;overflow-y:auto;overflow-x:hidden;width:100%;max-width:520px;margin:auto;padding:16px}
+section{display:none}section.on{display:block}
+.card{border-radius:22px;padding:16px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat{border-radius:18px;padding:12px;text-align:center}
+.stat span{font-size:11px;color:var(--m);display:block}.stat b{font-size:21px;display:block;margin-top:4px}
+label{font-size:12px;font-weight:700;color:var(--t);display:block;margin-bottom:8px}
+.in{width:100%;background:var(--g);border:2px solid #333;border-radius:16px;padding:12px 14px;font-size:18px;outline:0;transition:border .2s}
+.in:focus{border-color:var(--t)}
+.bc{font-family:ui-monospace,Menlo,monospace;letter-spacing:2px;font-size:20px}
+.hint{min-height:22px;font-size:13px;margin:8px 2px 14px;color:var(--m)}
+.qrow{display:flex;gap:8px;margin-bottom:16px}
+.qrow .in{text-align:center;font-weight:900;font-size:24px;min-width:0;flex:1}
+.sq{width:54px;height:54px;border:0;border-radius:16px;background:#2a2a2d;font-size:26px;font-weight:700;cursor:pointer;flex-shrink:0}
+.sq.p{background:var(--t);color:#000}
+.btn{width:100%;border:0;border-radius:16px;padding:15px;font-weight:900;font-size:16px;cursor:pointer;background:linear-gradient(90deg,var(--t),var(--s));color:#000}
+.btn:active,.sq:active,.chip:active{transform:scale(.96)}
+.btn.sec{background:#2a2a2d;color:#fff}.btn.red{background:rgba(127,29,29,.4);border:1px solid #ef4444;color:var(--r)}
+.row2{display:flex;gap:8px}
+.tools{display:flex;gap:8px;margin-bottom:12px}
+.chips{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+.chip{border:1px solid #333;background:var(--g);border-radius:20px;padding:7px 14px;font-size:12px;white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--t);color:#000;border-color:var(--t);font-weight:700}
+.item{border-radius:16px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;border-inline-start:4px solid var(--t)}
+.item.neg{border-inline-start-color:#ef4444}.item.unk{border-inline-start-color:#f59e0b}
+.item .nm{flex:1;min-width:0}
+.item .nm b{font-size:14px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .nm small{font-size:11px;color:var(--m);font-family:ui-monospace,monospace}
+.tag{font-size:9px;background:#dc2626;border-radius:6px;padding:1px 6px;margin-inline-start:6px;vertical-align:middle}
+.tag.y{background:#d97706}
+.step{display:flex;align-items:center;gap:4px;direction:ltr;flex-shrink:0}
+.step button{width:32px;height:32px;border:0;border-radius:10px;background:#2a2a2d;font-size:18px;cursor:pointer}
+.step span{min-width:34px;text-align:center;font-weight:900;font-size:18px;color:var(--t)}
+.step span.n{color:var(--r)}
+.del{border:0;background:transparent;font-size:18px;cursor:pointer;opacity:.6}
+.empty{text-align:center;color:var(--m);padding:50px 10px;font-size:14px;line-height:1.8}
+nav{flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #222}
+.nv{max-width:520px;margin:auto;display:flex;padding:6px 4px}
+.nv button{flex:1;border:0;background:none;color:#6b7280;padding:6px 0;font-size:11px;font-weight:700;cursor:pointer;position:relative}
+.nv button span{display:block;font-size:22px;margin-bottom:2px;filter:grayscale(1);opacity:.7}
+.nv button.on{color:var(--t)}.nv button.on span{filter:none;opacity:1}
+.nv em{position:absolute;top:2px;right:28%;background:#ef4444;color:#fff;font-style:normal;font-size:9px;border-radius:9px;padding:0 5px;display:none}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:14px}
+.sw input{width:22px;height:22px;accent-color:var(--t)}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translate(-50%,16px);background:#000;border:1px solid var(--t);border-radius:16px;padding:11px 16px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:90;display:flex;gap:12px;align-items:center;max-width:92vw}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}.toast.err{border-color:#ef4444}
+.toast button{background:var(--t);border:0;border-radius:10px;padding:5px 12px;font-weight:900;color:#000;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:100;padding:20px}
+.modal.on{display:grid}.modal .box{max-width:340px;width:100%;border-radius:22px;padding:20px;text-align:center}
+.modal p{margin:0 0 18px;line-height:1.7}
+#cam{position:fixed;inset:0;background:#000;z-index:110;display:none;flex-direction:column}
+#cam.on{display:flex}#cam video{flex:1;width:100%;object-fit:cover}
+#cam .btn{border-radius:0;padding:20px}
+.flash{animation:fl .6s}@keyframes fl{from{box-shadow:0 0 0 3px var(--t)}to{box-shadow:0 0 0 0 transparent}}
+#pdf{display:none;direction:rtl}
+@media print{
+html,body{height:auto!important;overflow:visible!important;background:#fff!important;color:#000!important}
+body>*:not(#pdf){display:none!important}
+#pdf{display:block!important;padding:8mm}
+#pdf h1{margin:0;font-size:20px;text-align:center}#pdf p{margin:4px 0 12px;font-size:11px;text-align:center;border-bottom:2px solid #000;padding-bottom:8px}
+.ps{display:flex;border:1px solid #000;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#f3f4f6}
+.ps div{flex:1;text-align:center;padding:7px;border-left:1px solid #ccc;font-size:9px}.ps b{display:block;font-size:13px}
+#pdf table{width:100%;border-collapse:collapse}
+#pdf th,#pdf td{border:1px solid #000;padding:5px;font-size:11px;text-align:right}
+#pdf th{background:#e5e7eb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#pdf tr{page-break-inside:avoid}#pdf thead{display:table-header-group}
+@page{margin:5mm}}
+</style>
 </head>
-<body class="flex flex-col">
+<body>
+<header class="glass">
+  <div class="hd">
+    <div class="logo">U</div>
+    <div><h1>يونيبرس - موديعين</h1><small>أبو جواهر | 0546588897</small></div>
+    <div class="dot" id="net"><i></i><span>متصل</span></div>
+  </div>
+  <div class="prog"><b id="bar"></b></div>
+</header>
 
-    <!-- Top Header (Fixed at top, cannot move) -->
-    <header class="glass flex-shrink-0 z-50 border-b border-brand-turq/30 pt-[env(safe-area-inset-top)]">
-        <div class="flex justify-between items-center max-w-lg mx-auto w-full p-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-brand-turq w-10 h-10 rounded-xl flex items-center justify-center text-black font-black text-xl shadow-glow flex-shrink-0">U</div>
-                <div class="min-w-0">
-                    <h1 class="text-lg font-bold text-brand-sky leading-none truncate">يونيبرس - موديعين</h1>
-                    <p class="text-[10px] text-brand-turq mt-1 tracking-wider truncate">أبو جواهر | 0546588897</p>
-                </div>
-            </div>
-            <div class="text-brand-turq text-center flex-shrink-0 ml-2">
-                <i class="fa-solid fa-clipboard-check text-xl mb-1"></i>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content Area (The ONLY scrollable part) -->
-    <main class="flex-1 w-full max-w-lg mx-auto overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 pb-8">
-        
-        <!-- ================= TAB 1: SCAN/ADD ================= -->
-        <section id="section-scan" class="tab-content active-content space-y-5">
-            <!-- Stats Row -->
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass p-4 rounded-2xl text-center border-t-2 border-brand-sky relative overflow-hidden">
-                    <div class="absolute -top-4 -right-4 w-12 h-12 bg-brand-sky/20 rounded-full blur-xl pointer-events-none"></div>
-                    <span class="text-[10px] text-gray-400 block mb-1">القيمة (نت) بالشيكل</span>
-                    <span id="stat-money" class="text-xl font-black text-brand-sky tracking-wider truncate block">0</span>
-                </div>
-                <div class="glass p-4 rounded-2xl text-center border-t-2 border-red-500 relative overflow-hidden">
-                    <div class="absolute -top-4 -left-4 w-12 h-12 bg-red-500/20 rounded-full blur-xl pointer-events-none"></div>
-                    <span class="text-[10px] text-gray-400 block mb-1">الربح الإضافي (سالب)</span>
-                    <span id="stat-neg-money" class="text-xl font-black text-red-400 tracking-wider truncate block">0</span>
-                </div>
-            </div>
-
-            <!-- Input Form -->
-            <div class="glass p-5 sm:p-6 rounded-3xl shadow-lg relative overflow-hidden">
-                <form onsubmit="handleAddItem(event)" class="space-y-5 relative z-10">
-                    <div>
-                        <label class="text-xs text-brand-turq font-bold flex items-center gap-2 mb-2">
-                            <i class="fa-solid fa-barcode"></i> باركود الصنف
-                        </label>
-                        <input type="text" id="barcode-input" inputmode="numeric" autocomplete="off" class="w-full bg-brand-gray border-2 border-gray-700 focus:border-brand-turq rounded-2xl py-3 px-4 text-white text-xl font-mono tracking-widest outline-none transition-colors" placeholder="امسح الباركود هان..." required autofocus>
-                        <div id="product-name-hint" class="text-xs mt-2 h-5 font-medium px-1 truncate w-full"></div>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-brand-turq font-bold flex items-center gap-2 mb-2">
-                            <i class="fa-solid fa-cubes"></i> الكمية (سالب = ربح/مرتجع)
-                        </label>
-                        <div class="flex gap-2 sm:gap-3">
-                            <button type="button" onclick="adjustQty(-1)" class="w-14 h-14 bg-gray-800 rounded-2xl text-2xl font-bold flex items-center justify-center hover:bg-gray-700 active:scale-95 transition-all flex-shrink-0">-</button>
-                            <input type="number" id="qty-input" value="1" step="any" class="flex-1 bg-brand-gray border-2 border-gray-700 focus:border-brand-turq rounded-2xl p-2 text-center text-2xl font-black text-white outline-none min-w-0">
-                            <button type="button" onclick="adjustQty(1)" class="w-14 h-14 bg-brand-turq text-black rounded-2xl text-2xl font-bold flex items-center justify-center hover:bg-brand-sky shadow-glow active:scale-95 transition-all flex-shrink-0">+</button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full bg-gradient-to-r from-brand-turq to-brand-sky text-black font-black py-4 rounded-2xl shadow-glow-sky active:scale-95 transition-transform text-lg flex items-center justify-center gap-3 mt-2">
-                        <i class="fa-solid fa-plus"></i> إضافة للجرد
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- ================= TAB 2: INVENTORY LIST ================= -->
-        <section id="section-list" class="tab-content space-y-4">
-            <div class="flex justify-between items-center px-1">
-                <h2 class="font-bold text-brand-sky text-base">المعدود (<span id="item-count">0</span>)</h2>
-                <button onclick="generatePDF()" class="bg-white text-black text-xs font-black px-4 py-2 rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all flex-shrink-0">
-                    <i class="fa-solid fa-print text-base"></i> طباعة التقرير
-                </button>
-            </div>
-            <div id="inventory-list" class="space-y-3 pb-2"></div>
-            <div id="list-empty" class="text-center py-16 text-gray-500 space-y-4 hidden">
-                <i class="fa-solid fa-box-open text-6xl block opacity-50"></i>
-                <p class="font-medium text-sm">المخزن فاضي يا معلمي، بلش جرد!</p>
-            </div>
-        </section>
-
-        <!-- ================= TAB 3: MISSING (المنسي) ================= -->
-        <section id="section-missing" class="tab-content space-y-4">
-            <div class="px-1">
-                <h2 class="font-bold text-red-400 text-base flex items-center gap-2"><i class="fa-solid fa-bell"></i> أصناف منسية (<span id="missing-count">0</span>)</h2>
-                <p class="text-[10px] text-gray-400 mt-1 leading-relaxed">أصناف موجودة بجوجل شيت بس إنت لسا ما عديتها اليوم.</p>
-            </div>
-            <div id="missing-list" class="space-y-3 pb-2"></div>
-        </section>
-
-        <!-- ================= TAB 4: SETTINGS ================= -->
-        <section id="section-settings" class="tab-content space-y-6">
-            <div class="glass p-5 rounded-3xl border border-brand-turq/20 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-brand-turq/5 rounded-full blur-3xl pointer-events-none"></div>
-                <h3 class="text-brand-turq font-bold mb-3 text-base flex items-center gap-2 relative z-10"><i class="fa-solid fa-cloud-sync"></i> مزامنة البيانات</h3>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed relative z-10">اسحب أحدث الأسماء والأسعار من ملف جوجل شيت تبعك لتكون دايماً عالأكيد.</p>
-                <button onclick="fetchFromGoogleSheet()" class="w-full bg-brand-turq text-black font-black py-4 rounded-xl shadow-glow active:scale-95 transition-all flex justify-center items-center gap-2 relative z-10">
-                    <i class="fa-solid fa-rotate-right"></i> تحديث الآن
-                </button>
-                <p id="db-status" class="text-[11px] text-center mt-4 text-gray-400 font-mono bg-black/50 py-2 rounded-lg relative z-10">الأصناف المحفوظة: 0</p>
-            </div>
-            
-            <div class="glass p-5 rounded-3xl border border-red-500/30">
-                <h3 class="text-red-400 font-bold mb-3 text-base flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> تصفير النظام</h3>
-                <p class="text-xs text-gray-400 mb-4">امسح كل الجرد الحالي وابدأ من الصفر (الأسماء بتضل محفوظة بالذاكرة).</p>
-                <button onclick="clearInventory()" class="w-full bg-red-900/40 border border-red-500 text-red-400 font-bold py-4 rounded-xl active:bg-red-500 active:text-white transition-all flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-trash-can"></i> مسح الجرد بالكامل
-                </button>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Bottom Navigation Bar (Fixed at bottom, respects iPhone Home Indicator) -->
-    <nav class="glass flex-shrink-0 z-50 border-t border-gray-800 pb-[env(safe-area-inset-bottom)]">
-        <div class="flex justify-around max-w-lg mx-auto w-full px-1 py-2">
-            <button onclick="switchTab('scan')" id="tab-scan" class="nav-btn active flex flex-col items-center gap-1.5 flex-1 pt-1">
-                <i class="fa-solid fa-barcode text-xl"></i>
-                <span class="text-[10px] font-bold">الجرد</span>
-            </button>
-            <button onclick="switchTab('list')" id="tab-list" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1">
-                <i class="fa-solid fa-clipboard-list text-xl"></i>
-                <span class="text-[10px] font-bold">المعدود</span>
-            </button>
-            <button onclick="switchTab('missing')" id="tab-missing" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1 relative">
-                <i class="fa-solid fa-eye-slash text-xl"></i>
-                <span class="text-[10px] font-bold">المنسي</span>
-                <span id="missing-badge" class="absolute top-0 right-[20%] w-2.5 h-2.5 bg-red-500 rounded-full border border-black hidden"></span>
-            </button>
-            <button onclick="switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center gap-1.5 flex-1 pt-1">
-                <i class="fa-solid fa-gear text-xl"></i>
-                <span class="text-[10px] font-bold">ضبط</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Premium Toast Notification (Centered near bottom to avoid header collision) -->
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 w-11/12 max-w-xs bg-brand-dark border border-brand-turq text-white px-5 py-3 rounded-2xl font-bold shadow-glow text-sm opacity-0 transition-all duration-300 z-[100] pointer-events-none flex items-center justify-center gap-2 transform translate-y-4">
-        <i class="fa-solid fa-circle-check text-brand-turq"></i> <span id="toast-msg" class="truncate">تمت الإضافة</span>
+<main id="main">
+  <!-- الجرد -->
+  <section id="s-scan" class="on">
+    <div class="stats">
+      <div class="stat glass" style="border-top:2px solid var(--s)"><span>القيمة الصافية ₪</span><b id="st-m" style="color:var(--s)">0</b></div>
+      <div class="stat glass" style="border-top:2px solid #ef4444"><span>الربح الإضافي (سالب) ₪</span><b id="st-n" style="color:var(--r)">0</b></div>
     </div>
+    <form class="card glass" id="f" autocomplete="off">
+      <label>باركود الصنف</label>
+      <div class="row2">
+        <input class="in bc" id="bc" inputmode="numeric" placeholder="امسح الباركود هان..." required autofocus>
+        <button type="button" class="sq" id="camBtn" style="display:none" aria-label="كاميرا">📷</button>
+      </div>
+      <div class="hint" id="hint"></div>
+      <label>الكمية (سالب = ربح / مرتجع)</label>
+      <div class="qrow">
+        <button type="button" class="sq" data-q="-1">−</button>
+        <input class="in" id="qty" type="number" step="any" value="1" inputmode="decimal">
+        <button type="button" class="sq p" data-q="1">+</button>
+      </div>
+      <button class="btn" type="submit">إضافة للجرد</button>
+    </form>
+    <div class="card glass" id="last" style="display:none"></div>
+  </section>
 
-    <!-- Flawless PDF Template -->
-    <div id="pdf-container">
-        <div class="pdf-header">
-            <h1>يونيبرس (יוניבירס) - تقرير الجرد</h1>
-            <p>إشراف: أبو جواهر | فرع: موديعين | التاريخ: <span id="pdf-date"></span></p>
-        </div>
-        
-        <div class="pdf-stats">
-            <div class="pdf-stat-item">
-                <span>أصناف معدودة</span>
-                <b id="pdf-c">0</b>
-            </div>
-            <div class="pdf-stat-item">
-                <span>مجموع الكمية (+)</span>
-                <b id="pdf-q">0</b>
-            </div>
-            <div class="pdf-stat-item">
-                <span>القيمة الصافية</span>
-                <b id="pdf-m">0 ₪</b>
-            </div>
-            <div class="pdf-stat-item">
-                <span>الربح الإضافي (-)</span>
-                <b id="pdf-nm" style="color:red">0 ₪</b>
-            </div>
-        </div>
-
-        <table class="pdf-table">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">الباركود</th>
-                    <th style="width: 45%;">اسم الصنف</th>
-                    <th style="width: 15%;">السعر</th>
-                    <th style="width: 15%;">الكمية</th>
-                </tr>
-            </thead>
-            <tbody id="pdf-tbody"></tbody>
-        </table>
-        
-        <div class="pdf-footer">
-            تم استخراج التقرير آلياً بواسطة نظام إدارة المخازن الخاص بأبو جواهر.
-        </div>
+  <!-- المعدود -->
+  <section id="s-list">
+    <div class="tools">
+      <input class="in" id="q1" placeholder="🔎 ابحث بالاسم أو الباركود" style="font-size:14px;padding:10px 14px">
+      <button class="chip" id="print" style="flex-shrink:0">🖨 طباعة</button>
     </div>
+    <div class="chips" id="chips">
+      <button class="chip on" data-f="all">الكل</button>
+      <button class="chip" data-f="neg">ربح (سالب)</button>
+      <button class="chip" data-f="unk">غير مسجل</button>
+    </div>
+    <div id="list"></div>
+  </section>
 
-    <script>
-        // --- Core Data ---
-        let productDatabase = {}; 
-        let inventory = {}; 
-        const sheetId = '1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc';
+  <!-- المنسي -->
+  <section id="s-missing">
+    <h2 style="font-size:16px;color:var(--r);margin:0 0 6px">أصناف منسية (<span id="mc">0</span>)</h2>
+    <p style="font-size:11px;color:var(--m);margin:0 0 12px">أصناف موجودة بجوجل شيت وما عديتها لسا.</p>
+    <input class="in" id="q2" placeholder="🔎 ابحث..." style="font-size:14px;padding:10px 14px;margin-bottom:12px">
+    <div id="miss"></div>
+  </section>
 
-        // --- Initialization ---
-        window.onload = () => {
-            loadData();
-            fetchFromGoogleSheet(true); // Silent update on load
-            
-            // Auto-search logic
-            document.getElementById('barcode-input').addEventListener('input', e => {
-                const b = e.target.value.trim();
-                const h = document.getElementById('product-name-hint');
-                if(productDatabase[b]) {
-                    h.innerHTML = `<i class="fa-solid fa-check text-brand-turq"></i> ${productDatabase[b].name} <span class="text-brand-sky ml-1">(${productDatabase[b].price}₪)</span>`;
-                    h.className = "text-xs mt-2 h-5 text-gray-300 px-1 truncate w-full block";
-                } else {
-                    h.innerHTML = b ? `<i class="fa-solid fa-circle-info"></i> صنف مش مسجل بالشيت` : "";
-                    h.className = "text-xs mt-2 h-5 text-red-400 px-1 truncate w-full block";
-                }
-            });
-        };
+  <!-- ضبط -->
+  <section id="s-set">
+    <div class="card glass">
+      <label>مزامنة جوجل شيت</label>
+      <p style="font-size:12px;color:var(--m);margin:0 0 10px;line-height:1.7">الملف لازم يكون مشارك "أي شخص معه الرابط". الأعمدة: باركود، اسم، سعر.</p>
+      <input class="in" id="sheet" placeholder="رابط الشيت أو المعرّف" style="font-size:13px;direction:ltr;margin-bottom:10px">
+      <button class="btn" id="sync">تحديث الآن</button>
+      <p id="dbs" style="font-size:11px;text-align:center;color:var(--m);margin:10px 0 0"></p>
+    </div>
+    <div class="card glass">
+      <div class="sw"><span>صوت عند الإضافة</span><input type="checkbox" id="snd"></div>
+      <div class="sw"><span>اهتزاز عند الإضافة</span><input type="checkbox" id="vib"></div>
+    </div>
+    <div class="card glass">
+      <label>تصدير الجرد</label>
+      <div class="row2">
+        <button class="btn sec" id="csv">ملف Excel / CSV</button>
+        <button class="btn sec" id="wa">واتساب</button>
+      </div>
+    </div>
+    <div class="card glass" style="border-color:rgba(239,68,68,.4)">
+      <label style="color:var(--r)">تصفير الجرد</label>
+      <p style="font-size:12px;color:var(--m);margin:0 0 10px">بمسح كل المعدود. أسماء الأصناف بتضل محفوظة.</p>
+      <button class="btn red" id="clr">مسح الجرد بالكامل</button>
+    </div>
+  </section>
+</main>
 
-        // --- Navigation Logic ---
-        function switchTab(t) {
-            ['scan', 'list', 'missing', 'settings'].forEach(s => {
-                document.getElementById(`section-${s}`).classList.remove('active-content');
-                document.getElementById(`tab-${s}`).classList.remove('active');
-            });
-            
-            document.getElementById(`section-${t}`).classList.add('active-content');
-            document.getElementById(`tab-${t}`).classList.add('active');
-            
-            if(t === 'missing') updateMissingList();
-            if(t === 'scan') {
-                const input = document.getElementById('barcode-input');
-                setTimeout(() => input.focus(), 100);
-            }
-        }
+<nav class="glass"><div class="nv">
+  <button class="on" data-t="scan"><span>📦</span>الجرد</button>
+  <button data-t="list"><span>📋</span>المعدود</button>
+  <button data-t="missing"><span>👁</span>المنسي<em id="mb"></em></button>
+  <button data-t="set"><span>⚙️</span>ضبط</button>
+</div></nav>
 
-        // --- Business Logic ---
-        function handleAddItem(e) {
-            e.preventDefault();
-            const bEl = document.getElementById('barcode-input');
-            const qEl = document.getElementById('qty-input');
-            const b = bEl.value.trim();
-            const q = parseFloat(qEl.value) || 0;
+<div class="toast" id="toast"><span id="tm"></span><button id="ta" style="display:none">تراجع</button></div>
+<div class="modal" id="modal"><div class="box glass"><p id="mq"></p><div class="row2"><button class="btn sec" id="mn">إلغاء</button><button class="btn red" id="my">تأكيد</button></div></div></div>
+<div id="cam"><video id="vid" playsinline muted></video><button class="btn red" id="camX">إغلاق الكاميرا</button></div>
 
-            if(!b || q === 0) {
-                showToast("دخل باركود وكمية صح يا كبير!", true);
-                return;
-            }
+<div id="pdf">
+  <h1>يونيبرس (יוניבירס) - تقرير الجرد</h1>
+  <p>إشراف: أبو جواهر | فرع: موديعين | <span id="pd"></span></p>
+  <div class="ps"><div>أصناف معدودة<b id="p1">0</b></div><div>مجموع الكمية (+)<b id="p2">0</b></div><div>القيمة الصافية<b id="p3">0</b></div><div>الربح الإضافي (-)<b id="p4">0</b></div></div>
+  <table><thead><tr><th style="width:25%">الباركود</th><th>اسم الصنف</th><th style="width:12%">السعر</th><th style="width:12%">الكمية</th><th style="width:14%">المجموع</th></tr></thead><tbody id="pb"></tbody></table>
+</div>
 
-            if(!inventory[b]) {
-                inventory[b] = { 
-                    qty: q, 
-                    name: productDatabase[b]?.name || "صنف يدوي (بدون اسم)", 
-                    price: parseFloat(productDatabase[b]?.price) || 0 
-                };
-            } else {
-                inventory[b].qty += q;
-            }
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{toast('الذاكرة ممتلئة، صدّر الجرد',1)}};
+const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
 
-            saveData();
-            updateUI();
-            
-            // Reset form
-            bEl.value = ''; 
-            qEl.value = '1';
-            document.getElementById('product-name-hint').innerHTML = '';
-            
-            bEl.focus();
-            if(navigator.vibrate) navigator.vibrate([40, 30, 40]);
-            showToast("انحفظت مية المية 👍");
-        }
+let db=ld('univ_db_v3',{}), inv=ld('univ_inv_v3',{});
+let cfg=Object.assign({sheet:'1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc',snd:true,vib:true},ld('univ_cfg_v1',{}));
+let filter='all', undoFn=null, tmr;
+const saveInv=()=>sv('univ_inv_v3',inv), saveDb=()=>sv('univ_db_v3',db), saveCfg=()=>sv('univ_cfg_v1',cfg);
 
-        function updateUI() {
-            let totalVal = 0, negVal = 0, count = 0;
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = '';
+/* ---------- Tabs ---------- */
+function tab(t){
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
+  document.querySelectorAll('.nv button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  $('main').scrollTop=0;
+  if(t==='missing')renderMissing();
+  if(t==='list')renderList();
+  if(t==='scan')setTimeout(()=>$('bc').focus(),80);
+}
+document.querySelector('.nv').onclick=e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)};
 
-            const sortedKeys = Object.keys(inventory).reverse();
-            sortedKeys.forEach(b => {
-                const item = inventory[b];
-                const lineVal = item.price * item.qty;
-                
-                totalVal += lineVal; 
-                if(item.qty < 0) negVal += Math.abs(lineVal);
-                count++;
+/* ---------- Feedback ---------- */
+function toast(msg,err,undo){
+  const t=$('toast');$('tm').textContent=msg;t.classList.toggle('err',!!err);
+  undoFn=undo||null;$('ta').style.display=undo?'':'none';
+  t.classList.add('on');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),undo?5000:2400);
+}
+$('ta').onclick=()=>{if(undoFn){undoFn();undoFn=null}$('toast').classList.remove('on')};
+function ask(q){return new Promise(r=>{$('mq').textContent=q;$('modal').classList.add('on');
+  const done=v=>{$('modal').classList.remove('on');r(v)};$('my').onclick=()=>done(true);$('mn').onclick=()=>done(false)})}
+let actx;
+function beep(f=880){if(!cfg.snd)return;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+.09)}catch{}}
+const buzz=p=>{if(cfg.vib&&navigator.vibrate)navigator.vibrate(p)};
 
-                const div = document.createElement('div');
-                div.className = `glass p-3 sm:p-4 rounded-2xl flex justify-between items-center border-r-4 ${item.qty < 0 ? 'border-red-500' : 'border-brand-turq'} mb-3`;
-                div.innerHTML = `
-                    <div class="flex-1 min-w-0 pr-1">
-                        <div class="text-sm font-bold text-white flex items-center gap-2 truncate">
-                            <span class="truncate">${item.name}</span>
-                            ${item.qty < 0 ? '<span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">ربح</span>' : ''}
-                        </div>
-                        <div class="text-[10px] text-gray-400 mt-1 font-mono truncate">${b} <span class="mx-1">|</span> <span class="text-brand-sky">₪${item.price}</span></div>
-                    </div>
-                    <div class="flex items-center gap-3 sm:gap-4 pl-1 flex-shrink-0">
-                        <span class="text-lg sm:text-xl font-black ${item.qty < 0 ? 'text-red-400':'text-brand-turq'}" dir="ltr">${item.qty}</span>
-                        <button onclick="deleteItem('${b}')" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:bg-red-900/50 hover:text-red-500 flex items-center justify-center transition-all flex-shrink-0">
-                            <i class="fa-solid fa-trash-can text-sm"></i>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
+/* ---------- Core ---------- */
+function setQty(b,q,silent){
+  const prev=inv[b]?{...inv[b]}:null;
+  if(!inv[b]){const d=db[b];inv[b]={qty:0,name:d?d.name:'صنف يدوي (بدون اسم)',price:d?d.price:0,known:!!d,t:Date.now()}}
+  inv[b].qty=Math.round((inv[b].qty+q)*1000)/1000;inv[b].t=Date.now();
+  if(inv[b].qty===0)delete inv[b];
+  saveInv();render();
+  return()=>{if(prev)inv[b]=prev;else delete inv[b];saveInv();render()};
+}
+$('f').onsubmit=e=>{
+  e.preventDefault();
+  const b=$('bc').value.trim(),q=parseFloat($('qty').value)||0;
+  if(!b||q===0){toast('دخل باركود وكمية صح',1);return}
+  const u=setQty(b,q),it=inv[b];
+  $('bc').value='';$('qty').value='1';$('hint').textContent='';$('bc').focus();
+  buzz([40,30,40]);beep(it&&it.known===false?330:880);
+  const L=$('last');L.style.display='block';L.classList.remove('flash');void L.offsetWidth;L.classList.add('flash');
+  L.innerHTML=it?`<b>${esc(it.name)}</b><div style="color:var(--m);font-size:12px;margin-top:4px">${esc(b)} — الكمية الآن: <span style="color:var(--t);font-weight:900">${it.qty}</span></div>`:'تم حذف الصنف (الكمية صفر)';
+  toast('انحفظ ✔',0,u);
+};
+$('bc').oninput=e=>{
+  const b=e.target.value.trim(),h=$('hint');
+  if(!b){h.textContent='';return}
+  const d=db[b],c=inv[b];
+  if(d){h.style.color='#d1d5db';h.innerHTML=`✔ ${esc(d.name)} <span style="color:var(--s)">(${d.price}₪)</span>${c?` <span style="color:var(--t)">• معدود: ${c.qty}</span>`:''}`}
+  else{h.style.color='#fbbf24';h.textContent='⚠ صنف مش مسجل بالشيت'+(c?` • معدود: ${c.qty}`:'')}
+};
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{$('qty').value=(parseFloat($('qty').value)||0)+Number(b.dataset.q)});
 
-            document.getElementById('stat-money').textContent = totalVal.toLocaleString();
-            document.getElementById('stat-neg-money').textContent = negVal.toLocaleString();
-            document.getElementById('item-count').textContent = count;
-            document.getElementById('list-empty').classList.toggle('hidden', count > 0);
-            
-            // Update Missing Badge
-            const missingLen = Object.keys(productDatabase).filter(k => !inventory[k]).length;
-            document.getElementById('missing-badge').classList.toggle('hidden', missingLen === 0);
-        }
+/* ---------- Render ---------- */
+function render(){
+  let tot=0,neg=0,n=0,known=0;
+  for(const b in inv){const i=inv[b],v=i.price*i.qty;tot+=v;if(i.qty<0)neg+=-v;n++;if(db[b])known++}
+  $('st-m').textContent=fmt(tot);$('st-n').textContent=fmt(neg);
+  const all=Object.keys(db).length;
+  $('bar').style.width=(all?Math.min(100,known/all*100):0)+'%';
+  const miss=Math.max(0,all-known);
+  $('mb').textContent=miss>99?'99+':miss;$('mb').style.display=miss?'block':'none';
+  $('dbs').textContent=`الأصناف المحفوظة: ${all} • معدود منها: ${known}`;
+  if($('s-list').classList.contains('on'))renderList();
+  if($('s-missing').classList.contains('on'))renderMissing();
+}
+function renderList(){
+  const q=$('q1').value.trim().toLowerCase();
+  let keys=Object.keys(inv).sort((a,b)=>inv[b].t-inv[a].t);
+  keys=keys.filter(b=>{const i=inv[b];
+    if(filter==='neg'&&i.qty>=0)return false;
+    if(filter==='unk'&&db[b])return false;
+    return !q||b.includes(q)||i.name.toLowerCase().includes(q)});
+  $('list').innerHTML=keys.length?keys.map(b=>{const i=inv[b],neg=i.qty<0,unk=!db[b];
+    return `<div class="item glass ${neg?'neg':unk?'unk':''}" data-b="${esc(b)}">
+      <div class="nm"><b>${esc(i.name)}${neg?'<span class="tag">ربح</span>':''}${unk?'<span class="tag y">غير مسجل</span>':''}</b>
+      <small>${esc(b)} | ₪${i.price}</small></div>
+      <div class="step"><button data-a="-1">−</button><span class="${neg?'n':''}" data-a="e">${i.qty}</span><button data-a="1">+</button></div>
+      <button class="del" data-a="d">🗑</button></div>`}).join('')
+    :`<div class="empty">${Object.keys(inv).length?'ما في نتائج':'ما عديت شي لسا<br>بلّش جرد!'}</div>`;
+}
+function renderMissing(){
+  const q=$('q2').value.trim().toLowerCase();
+  const ks=Object.keys(db).filter(b=>!inv[b]&&(!q||b.includes(q)||db[b].name.toLowerCase().includes(q)));
+  $('mc').textContent=Object.keys(db).filter(b=>!inv[b]).length;
+  $('miss').innerHTML=ks.length?ks.slice(0,300).map(b=>`<div class="item glass" style="border-inline-start-color:rgba(239,68,68,.4)" data-b="${esc(b)}">
+    <div class="nm"><b>${esc(db[b].name)}</b><small>${esc(b)}</small></div>
+    <button class="chip" data-a="go" style="color:var(--t);border-color:var(--t)">عده هان</button></div>`).join('')+(ks.length>300?`<div class="empty">+${ks.length-300} صنف، استخدم البحث</div>`:'')
+    :`<div class="empty" style="color:var(--t)">✔ وحش يا أبو جواهر!<br>${Object.keys(db).length?'عديت كل المكتوب بالشيت.':'حدّث الشيت من الضبط.'}</div>`;
+}
+$('list').onclick=async e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;
+  const b=el.closest('[data-b]').dataset.b,a=el.dataset.a;
+  if(a==='1'||a==='-1'){const u=setQty(b,+a);buzz(20);if(!inv[b])toast('انحذف الصنف',0,u)}
+  else if(a==='e'){const v=parseFloat(prompt('الكمية الجديدة',inv[b].qty));if(!isNaN(v)){const u=setQty(b,v-inv[b].qty);toast('تم التعديل',0,u)}}
+  else if(a==='d'){if(await ask('مسح هاد الصنف من الجرد؟')){const prev={...inv[b]};delete inv[b];saveInv();render();toast('انحذف',0,()=>{inv[b]=prev;saveInv();render()})}}
+};
+$('miss').onclick=e=>{const el=e.target.closest('[data-a="go"]');if(!el)return;
+  tab('scan');$('bc').value=el.closest('[data-b]').dataset.b;$('bc').dispatchEvent(new Event('input'))};
+$('q1').oninput=renderList;$('q2').oninput=renderMissing;
+$('chips').onclick=e=>{const c=e.target.closest('.chip');if(!c)return;filter=c.dataset.f;
+  document.querySelectorAll('#chips .chip').forEach(x=>x.classList.toggle('on',x===c));renderList()};
 
-        function updateMissingList() {
-            const list = document.getElementById('missing-list');
-            list.innerHTML = '';
-            let mCount = 0;
+/* ---------- Google Sheet (CSV parser built-in, no libraries) ---------- */
+function parseCSV(t){const rows=[];let r=[],c='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===','){r.push(c);c=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);rows.push(r);r=[];c=''}
+    else c+=ch}
+  if(c||r.length){r.push(c);rows.push(r)}return rows}
+const sheetId=v=>{const m=String(v).match(/\/d\/([\w-]+)/);return m?m[1]:String(v).trim()};
+async function sync(silent){
+  const id=sheetId(cfg.sheet);if(!id){if(!silent)toast('حط رابط الشيت',1);return}
+  const btn=$('sync');btn.disabled=true;btn.textContent='جاري السحب...';
+  try{
+    const res=await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv&t=${Date.now()}`,{cache:'no-store'});
+    if(!res.ok)throw 0;
+    const d={};
+    parseCSV(await res.text()).forEach((r,i)=>{
+      const b=(r[0]||'').trim(),n=(r[1]||'').trim(),p=parseFloat((r[2]||'').replace(/[^\d.\-]/g,''))||0;
+      if(!b||(i===0&&/باركود|اسم|barcode|name/i.test(b+n)))return;
+      d[b]={name:n||'بدون اسم',price:p}});
+    if(!Object.keys(d).length)throw 0;
+    db=d;saveDb();
+    for(const b in inv)if(db[b]){inv[b].name=db[b].name;inv[b].price=db[b].price;inv[b].known=true}
+    saveInv();render();if(!silent)toast('تم تحديث الداتا ✔');
+  }catch{if(!silent)toast('فشل السحب: تأكد من النت ومشاركة الشيت',1)}
+  btn.disabled=false;btn.textContent='تحديث الآن';
+}
+$('sync').onclick=()=>{cfg.sheet=$('sheet').value.trim()||cfg.sheet;saveCfg();sync(false)};
 
-            Object.keys(productDatabase).forEach(b => {
-                if(!inventory[b]) {
-                    mCount++;
-                    const div = document.createElement('div');
-                    div.className = "glass p-3 sm:p-4 rounded-2xl border-l-4 border-red-500/30 flex justify-between items-center mb-2";
-                    div.innerHTML = `
-                        <div class="flex-1 min-w-0 pr-2">
-                            <div class="text-xs font-bold text-gray-300 truncate">${productDatabase[b].name}</div>
-                            <div class="text-[10px] text-gray-500 font-mono mt-1 truncate">${b}</div>
-                        </div>
-                        <button onclick="setScan('${b}')" class="bg-brand-turq/20 border border-brand-turq text-brand-turq text-[10px] font-bold px-3 py-2 rounded-lg active:bg-brand-turq active:text-black transition-colors flex-shrink-0">
-                            عده هان
-                        </button>
-                    `;
-                    list.appendChild(div);
-                }
-            });
-            document.getElementById('missing-count').textContent = mCount;
-            if(mCount === 0) list.innerHTML = `
-                <div class="text-center py-16 text-brand-turq space-y-4">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-turq/20">
-                        <i class="fa-solid fa-check-double text-3xl"></i>
-                    </div>
-                    <p class="font-bold text-sm">وحش يا أبو جواهر!<br>عديت كل المكتوب بالشيت.</p>
-                </div>`;
-        }
+/* ---------- Export / Print ---------- */
+function rows(){return Object.keys(inv).map(b=>({b,...inv[b]}))}
+$('csv').onclick=()=>{
+  const r=rows();if(!r.length){toast('ما في جرد للتصدير',1);return}
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const t='\uFEFF'+['باركود,الاسم,السعر,الكمية,المجموع',...r.map(i=>[q(i.b),q(i.name),i.price,i.qty,i.price*i.qty].join(','))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));
+  a.download='جرد-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+$('wa').onclick=()=>{
+  const r=rows();if(!r.length){toast('ما في جرد للإرسال',1);return}
+  let tot=0;r.forEach(i=>tot+=i.price*i.qty);
+  const txt=`جرد يونيبرس - موديعين\n${new Date().toLocaleDateString('ar-EG')}\nأصناف: ${r.length}\nالقيمة الصافية: ${fmt(tot)} ₪\n\n`+r.map(i=>`${i.name} (${i.b}) × ${i.qty}`).join('\n');
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+};
+$('print').onclick=()=>{
+  let tot=0,neg=0,pq=0,pc=0;
+  $('pb').innerHTML=rows().map(i=>{const v=i.price*i.qty;tot+=v;if(i.qty>0){pq+=i.qty;pc++}else neg+=-v;
+    return `<tr><td style="font-family:monospace">${esc(i.b)}</td><td><b>${esc(i.name)}</b></td><td>${i.price} ₪</td><td style="${i.qty<0?'color:red;font-weight:bold':''}">${i.qty}</td><td>${fmt(v)} ₪</td></tr>`}).join('');
+  $('pd').textContent=new Date().toLocaleString('ar-EG');
+  $('p1').textContent=pc;$('p2').textContent=fmt(pq);$('p3').textContent=fmt(tot)+' ₪';$('p4').textContent=fmt(neg)+' ₪';
+  window.print();
+};
+$('clr').onclick=async()=>{if(await ask('هاد الزر بمسح كل شغلك لليوم. متأكد؟')){const old=inv;inv={};saveInv();render();tab('scan');toast('تم التصفير',0,()=>{inv=old;saveInv();render()})}};
+$('snd').onchange=e=>{cfg.snd=e.target.checked;saveCfg()};$('vib').onchange=e=>{cfg.vib=e.target.checked;saveCfg()};
 
-        function setScan(b) {
-            switchTab('scan');
-            const input = document.getElementById('barcode-input');
-            input.value = b;
-            input.dispatchEvent(new Event('input')); // trigger lookup
-        }
+/* ---------- Camera scan (where BarcodeDetector exists) ---------- */
+let stream,camT;
+function closeCam(){clearInterval(camT);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('cam').classList.remove('on')}
+if('BarcodeDetector'in window&&navigator.mediaDevices){
+  $('camBtn').style.display='';
+  $('camBtn').onclick=async()=>{
+    try{
+      const det=new BarcodeDetector();
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      $('vid').srcObject=stream;await $('vid').play();$('cam').classList.add('on');
+      camT=setInterval(async()=>{try{const f=await det.detect($('vid'));
+        if(f.length){$('bc').value=f[0].rawValue;$('bc').dispatchEvent(new Event('input'));beep(1200);buzz(60);closeCam();$('qty').focus()}}catch{}},250);
+    }catch{closeCam();toast('الكاميرا مش متاحة',1)}
+  };
+  $('camX').onclick=closeCam;
+}
 
-        function deleteItem(b) { 
-            if(confirm("بدك تمسح هاد الصنف من الجرد؟")) { 
-                delete inventory[b]; 
-                saveData(); 
-                updateUI(); 
-            } 
-        }
-
-        function adjustQty(n) { 
-            const el = document.getElementById('qty-input');
-            el.value = (parseFloat(el.value)||0) + n; 
-        }
-
-        // --- Storage ---
-        function saveData() {
-            localStorage.setItem('univ_inv_v3', JSON.stringify(inventory));
-            localStorage.setItem('univ_db_v3', JSON.stringify(productDatabase));
-        }
-
-        function loadData() {
-            inventory = JSON.parse(localStorage.getItem('univ_inv_v3') || '{}');
-            productDatabase = JSON.parse(localStorage.getItem('univ_db_v3') || '{}');
-            updateUI();
-            updateDbStatus();
-        }
-
-        function clearInventory() { 
-            if(confirm("يا معلمي، هاد الزر بمسح كل شغلك لليوم! متأكد؟")) { 
-                inventory = {}; 
-                saveData(); 
-                updateUI(); 
-                switchTab('scan'); 
-            } 
-        }
-
-        // --- Network ---
-        async function fetchFromGoogleSheet(silent = false) {
-            const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&t=${Date.now()}`;
-            try {
-                if(!silent) {
-                    document.getElementById('db-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-turq"></i> جاري السحب...';
-                }
-                Papa.parse(url, {
-                    download: true,
-                    header: false,
-                    complete: res => {
-                        productDatabase = {};
-                        res.data.forEach((r, i) => {
-                            if(r.length < 2) return; 
-                            let b = r[0]?.toString().trim();
-                            let n = r[1]?.toString().trim();
-                            let p = r[2]?.toString().trim() || 0;
-                            
-                            if(i === 0 && (b.includes('باركود') || n.includes('اسم'))) return;
-                            
-                            if(b) productDatabase[b] = { name: n, price: p };
-                        });
-                        saveData();
-                        updateDbStatus();
-                        updateUI(); 
-                        if(!silent) showToast("تم تحديث الداتا بنجاح ✅");
-                    },
-                    error: err => {
-                        if(!silent) {
-                            alert("مشكلة في الاتصال، تأكد إنك شابك نت.");
-                            updateDbStatus();
-                        }
-                    }
-                });
-            } catch(e) { 
-                if(!silent) {
-                    alert("مشكلة في سحب البيانات.");
-                    updateDbStatus();
-                }
-            }
-        }
-
-        function updateDbStatus() { 
-            document.getElementById('db-status').textContent = `الأصناف المحفوظة بالذاكرة: ${Object.keys(productDatabase).length}`; 
-        }
-
-        // --- Print/PDF ---
-        function generatePDF() {
-            let totalVal = 0, negVal = 0, posQty = 0, posCount = 0;
-            const tbody = document.getElementById('pdf-tbody');
-            tbody.innerHTML = '';
-
-            Object.keys(inventory).forEach(b => {
-                const item = inventory[b];
-                const val = item.price * item.qty;
-                totalVal += val;
-                
-                if(item.qty > 0) {
-                    posQty += item.qty;
-                    posCount++;
-                } else {
-                    negVal += Math.abs(val);
-                }
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="font-family: monospace;">${b}</td>
-                        <td style="font-weight: bold;">${item.name}</td>
-                        <td>${item.price} ₪</td>
-                        <td style="${item.qty < 0 ? 'color:red; font-weight:bold;' : ''}">${item.qty}</td>
-                    </tr>`;
-            });
-
-            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            document.getElementById('pdf-c').textContent = posCount;
-            document.getElementById('pdf-q').textContent = posQty;
-            document.getElementById('pdf-m').textContent = totalVal.toLocaleString() + " ₪";
-            document.getElementById('pdf-nm').textContent = negVal.toLocaleString() + " ₪";
-            
-            window.print();
-        }
-
-        // --- UI Helpers ---
-        function showToast(msg, isError = false) {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').textContent = msg;
-            
-            if(isError) {
-                t.classList.add('border-red-500');
-                t.classList.remove('border-brand-turq');
-                t.querySelector('i').className = "fa-solid fa-triangle-exclamation text-red-500";
-            } else {
-                t.classList.add('border-brand-turq');
-                t.classList.remove('border-red-500');
-                t.querySelector('i').className = "fa-solid fa-circle-check text-brand-turq";
-            }
-
-            t.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-            t.classList.add('opacity-100', 'translate-y-0');
-            
-            setTimeout(() => { 
-                t.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none'); 
-                t.classList.remove('opacity-100', 'translate-y-0'); 
-            }, 2500);
-        }
-    </script>
+/* ---------- Network + init ---------- */
+function net(){const o=navigator.onLine;$('net').classList.toggle('off',!o);$('net').querySelector('span').textContent=o?'متصل':'بدون نت'}
+addEventListener('online',()=>{net();sync(true)});addEventListener('offline',net);
+$('sheet').value=cfg.sheet;$('snd').checked=cfg.snd;$('vib').checked=cfg.vib;
+net();render();if(navigator.onLine)sync(true);
+</script>
 </body>
 </html>
