@@ -74,19 +74,6 @@ nav{flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);border-top:1px soli
 #cam.on{display:flex}#cam video{flex:1;width:100%;object-fit:cover}
 #cam .btn{border-radius:0;padding:20px}
 .flash{animation:fl .6s}@keyframes fl{from{box-shadow:0 0 0 3px var(--t)}to{box-shadow:0 0 0 0 transparent}}
-#pdf{display:none;direction:rtl}
-@media print{
-html,body{height:auto!important;overflow:visible!important;background:#fff!important;color:#000!important}
-body>*:not(#pdf){display:none!important}
-#pdf{display:block!important;padding:8mm}
-#pdf h1{margin:0;font-size:20px;text-align:center}#pdf p{margin:4px 0 12px;font-size:11px;text-align:center;border-bottom:2px solid #000;padding-bottom:8px}
-.ps{display:flex;border:1px solid #000;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#f3f4f6}
-.ps div{flex:1;text-align:center;padding:7px;border-left:1px solid #ccc;font-size:9px}.ps b{display:block;font-size:13px}
-#pdf table{width:100%;border-collapse:collapse}
-#pdf th,#pdf td{border:1px solid #000;padding:5px;font-size:11px;text-align:right}
-#pdf th{background:#e5e7eb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-#pdf tr{page-break-inside:avoid}#pdf thead{display:table-header-group}
-@page{margin:5mm}}
 </style>
 </head>
 <body>
@@ -130,7 +117,7 @@ body>*:not(#pdf){display:none!important}
   <section id="s-list">
     <div class="tools">
       <input class="in" id="q1" placeholder="🔎 ابحث بالاسم أو الباركود" style="font-size:14px;padding:10px 14px">
-      <button class="chip" id="print" style="flex-shrink:0">🖨 طباعة</button>
+      <button class="chip" id="prt" style="flex-shrink:0">🖨 طباعة</button><button class="chip" id="sav" style="flex-shrink:0">⬇ ملف</button>
     </div>
     <div class="chips" id="chips">
       <button class="chip on" data-f="all">الكل</button>
@@ -166,6 +153,7 @@ body>*:not(#pdf){display:none!important}
     </div>
     <div class="card glass">
       <label>تصدير الجرد</label>
+      <input class="in" id="wph" inputmode="tel" placeholder="رقم واتساب للإرسال المباشر (اختياري)" style="font-size:13px;direction:ltr;margin-bottom:10px">
       <div class="row2">
         <button class="btn sec" id="csv">ملف Excel / CSV</button>
         <button class="btn sec" id="wa">واتساب</button>
@@ -188,15 +176,9 @@ body>*:not(#pdf){display:none!important}
 </div></nav>
 
 <div class="toast" id="toast"><span id="tm"></span><button id="ta" style="display:none">تراجع</button></div>
+<div class="modal" id="lm"><div class="box glass"><p>بأي لغة بدك رسالة الواتساب؟</p><div class="row2"><button class="btn" data-l="ar">العربية</button><button class="btn" data-l="he">עברית</button></div><button class="btn sec" data-l="x" style="margin-top:8px">إلغاء</button></div></div>
 <div class="modal" id="modal"><div class="box glass"><p id="mq"></p><div class="row2"><button class="btn sec" id="mn">إلغاء</button><button class="btn red" id="my">تأكيد</button></div></div></div>
 <div id="cam"><video id="vid" playsinline muted></video><button class="btn red" id="camX">إغلاق الكاميرا</button></div>
-
-<div id="pdf">
-  <h1>يونيبرس (יוניבירס) - تقرير الجرد</h1>
-  <p>إشراف: أبو جواهر | فرع: موديعين | <span id="pd"></span></p>
-  <div class="ps"><div>أصناف معدودة<b id="p1">0</b></div><div>مجموع الكمية (+)<b id="p2">0</b></div><div>القيمة الصافية<b id="p3">0</b></div><div>الربح الإضافي (-)<b id="p4">0</b></div><div>منسية<b id="p5">0</b></div></div>
-  <table><thead><tr><th style="width:21%">الباركود</th><th>اسم الصنف</th><th style="width:9%">السعر</th><th style="width:9%">الكمية</th><th style="width:9%">بالنظام</th><th style="width:9%">الفرق</th><th style="width:12%">المجموع</th></tr></thead><tbody id="pb"></tbody></table>
-</div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -206,7 +188,7 @@ const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{toast('ال
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
 
 let db=ld('univ_db_v3',{}), inv=ld('univ_inv_v3',{});
-let cfg=Object.assign({sheet:'1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc',snd:true,vib:true,aq:false,last:0},ld('univ_cfg_v1',{}));
+let cfg=Object.assign({sheet:'1LNlEKM7pqfjlMk3JkS_Zi9tJ31ft2pLnRuXey84tVfc',snd:true,vib:true,aq:false,last:0,ph:''},ld('univ_cfg_v1',{}));
 let filter='all', undoFn=null, tmr;
 const saveInv=()=>sv('univ_inv_v3',inv), saveDb=()=>sv('univ_db_v3',db), saveCfg=()=>sv('univ_cfg_v1',cfg);
 
@@ -363,19 +345,43 @@ $('csv').onclick=()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));
   a.download='جرد-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 };
-$('wa').onclick=()=>{
+const WT={ar:{h:'جرد يونيبرس - موديعين',it:'أصناف',v:'القيمة الصافية',loc:'ar-EG',more:n=>`... و${n} أصناف أخرى`},
+  he:{h:'ספירת מלאי יוניבירס - מודיעין',it:'פריטים',v:'שווי נטו',loc:'he-IL',more:n=>`... ועוד ${n} פריטים`}};
+let lres;
+const askLang=()=>new Promise(r=>{lres=r;$('lm').classList.add('on')});
+$('lm').onclick=e=>{const b=e.target.closest('[data-l]');if(!b)return;$('lm').classList.remove('on');lres&&lres(b.dataset.l)};
+$('wph').onchange=e=>{cfg.ph=e.target.value.trim();saveCfg()};
+$('wa').onclick=async()=>{
   const r=rows();if(!r.length){toast('ما في جرد للإرسال',1);return}
-  let tot=0;r.forEach(i=>tot+=i.price*i.qty);
-  const txt=`جرد يونيبرس - موديعين\n${new Date().toLocaleDateString('ar-EG')}\nأصناف: ${r.length}\nالقيمة الصافية: ${fmt(tot)} ₪\n\n`+r.map(i=>`${i.name} (${i.b}) × ${i.qty}`).join('\n');
-  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  const l=await askLang();if(!l||l==='x')return;
+  const T=WT[l];let tot=0;r.forEach(i=>tot+=i.price*i.qty);
+  let txt=`${T.h}\n${new Date().toLocaleDateString(T.loc)}\n${T.it}: ${r.length}\n${T.v}: ${fmt(tot)} ₪\n\n`,k=0;
+  for(const i of r){const ln=`${i.name} (${i.b}) × ${i.qty}\n`;if(txt.length+ln.length>1500)break;txt+=ln;k++}
+  if(k<r.length)txt+=T.more(r.length-k);
+  let n=(cfg.ph||'').replace(/\D/g,'');if(n.startsWith('0'))n='972'+n.slice(1);
+  window.open(`https://wa.me/${n}?text=${encodeURIComponent(txt)}`,'_blank');
+  if(k<r.length)toast('الرسالة اختصرت، استخدم CSV للقائمة كاملة');
 };
-$('print').onclick=()=>{
+function reportHTML(auto){
   let tot=0,neg=0,pq=0,pc=0;
-  $('pb').innerHTML=rows().map(i=>{const v=i.price*i.qty;tot+=v;if(i.qty>0){pq+=i.qty;pc++}else neg+=-v;
-    return `<tr><td style="font-family:monospace">${esc(i.b)}</td><td><b>${esc(i.name)}</b></td><td>${i.price} ₪</td><td style="${i.qty<0?'color:red;font-weight:bold':''}">${i.qty}</td><td>${sy(i.b)===''?'-':sy(i.b)}</td><td>${sy(i.b)===''?'-':i.qty-sy(i.b)}</td><td>${fmt(v)} ₪</td></tr>`}).join('');
-  $('pd').textContent=new Date().toLocaleString('ar-EG');
-  $('p1').textContent=pc;$('p2').textContent=fmt(pq);$('p3').textContent=fmt(tot)+' ₪';$('p4').textContent=fmt(neg)+' ₪';$('p5').textContent=Object.keys(db).filter(b=>!inv[b]).length;
-  window.print();
+  const body=rows().map(i=>{const v=i.price*i.qty,y=sy(i.b);tot+=v;if(i.qty>0){pq+=i.qty;pc++}else neg-=v;
+    return `<tr><td class="m">${esc(i.b)}</td><td><b>${esc(i.name)}</b></td><td>${i.price} ₪</td><td${i.qty<0?' class="n"':''}>${i.qty}</td><td>${y===''?'-':y}</td><td>${y===''?'-':Math.round((i.qty-y)*1000)/1000}</td><td>${fmt(v)} ₪</td></tr>`}).join('');
+  const miss=Object.keys(db).filter(b=>!inv[b]).length;
+  const st=[['أصناف معدودة',pc],['مجموع الكمية (+)',fmt(pq)],['القيمة الصافية',fmt(tot)+' ₪'],['الربح الإضافي (-)',fmt(neg)+' ₪'],['منسية',miss]].map(x=>`<div>${x[0]}<b>${x[1]}</b></div>`).join('');
+  const css='body{font-family:Tahoma,Arial,sans-serif;margin:0;padding:16px;color:#000;background:#fff}h1{margin:0;font-size:20px;text-align:center}p{margin:4px 0 12px;font-size:12px;text-align:center;border-bottom:2px solid #000;padding-bottom:8px}.ps{display:flex;border:1px solid #000;margin-bottom:12px;background:#f3f4f6;-webkit-print-color-adjust:exact;print-color-adjust:exact}.ps div{flex:1;text-align:center;padding:7px;border-left:1px solid #ccc;font-size:10px}.ps b{display:block;font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:5px;font-size:11px;text-align:right}th{background:#e5e7eb;-webkit-print-color-adjust:exact;print-color-adjust:exact}tr{page-break-inside:avoid}thead{display:table-header-group}.m{font-family:monospace}.n{color:red;font-weight:bold}@page{margin:8mm}';
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تقرير الجرد</title><style>${css}</style></head><body><h1>يونيبرس (יוניבירס) - تقرير الجرد</h1><p>إشراف: أبو جواهر | فرع: موديعين | ${new Date().toLocaleString('ar-EG')}</p><div class="ps">${st}</div><table><thead><tr><th>الباركود</th><th>اسم الصنف</th><th>السعر</th><th>الكمية</th><th>بالنظام</th><th>الفرق</th><th>المجموع</th></tr></thead><tbody>${body}</tbody></table>${auto?'<script>onload=function(){setTimeout(function(){print()},400)}<\/script>':''}</body></html>`;
+}
+function saveReport(){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([reportHTML(false)],{type:'text/html;charset=utf-8'}));
+  a.download='تقرير-جرد-'+new Date().toISOString().slice(0,10)+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+$('sav').onclick=()=>{if(!Object.keys(inv).length){toast('ما في جرد للتقرير',1);return}saveReport();toast('نزل التقرير، افتحه واطبعه أو احفظه PDF')};
+$('prt').onclick=()=>{
+  if(!Object.keys(inv).length){toast('ما في جرد للطباعة',1);return}
+  const url=URL.createObjectURL(new Blob([reportHTML(true)],{type:'text/html;charset=utf-8'}));
+  const w=window.open(url,'_blank');
+  if(!w){saveReport();toast('المتصفح منع الطباعة، نزلت التقرير كملف',1);return}
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
 };
 $('clr').onclick=async()=>{if(await ask('هاد الزر بمسح كل شغلك لليوم. متأكد؟')){const old=inv;inv={};saveInv();render();tab('scan');toast('تم التصفير',0,()=>{inv=old;saveInv();render()})}};
 $('snd').onchange=e=>{cfg.snd=e.target.checked;saveCfg()};$('vib').onchange=e=>{cfg.vib=e.target.checked;saveCfg()};
@@ -413,7 +419,7 @@ if('BarcodeDetector'in window&&navigator.mediaDevices){
 /* ---------- Network + init ---------- */
 function net(){const o=navigator.onLine;$('net').classList.toggle('off',!o);$('net').querySelector('span').textContent=o?'متصل':'بدون نت'}
 addEventListener('online',()=>{net();sync(true)});addEventListener('offline',net);
-$('sheet').value=cfg.sheet;$('snd').checked=cfg.snd;$('aq').checked=cfg.aq;$('vib').checked=cfg.vib;
+$('sheet').value=cfg.sheet;$('snd').checked=cfg.snd;$('aq').checked=cfg.aq;$('wph').value=cfg.ph||'';$('vib').checked=cfg.vib;
 net();render();if(navigator.onLine)sync(true);
 </script>
 </body>
